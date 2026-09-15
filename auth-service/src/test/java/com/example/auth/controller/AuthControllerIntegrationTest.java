@@ -74,13 +74,11 @@ class AuthControllerIntegrationTest {
                 .password("Password123!")
                 .build();
 
-        // First registration
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        // Duplicate registration attempt
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -103,7 +101,6 @@ class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isCreated());
 
-        // Login
         LoginRequest loginReq = LoginRequest.builder()
                 .email("login.user@example.com")
                 .password("StrongSecret99#")
@@ -210,7 +207,6 @@ class AuthControllerIntegrationTest {
                 AuthResponse.class
         );
 
-        // Reusing the old (now revoked) refresh token should be rejected (breach detection)
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(refreshReq)))
@@ -241,7 +237,6 @@ class AuthControllerIntegrationTest {
                 .refreshToken(authResponse.getRefreshToken())
                 .build();
 
-        // Perform logout
         mockMvc.perform(post("/api/v1/auth/logout")
                         .header("Authorization", "Bearer " + authResponse.getAccessToken())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -286,7 +281,6 @@ class AuthControllerIntegrationTest {
     @Test
     @DisplayName("10. Role-based authorization: USER gets 403 on admin endpoint, ADMIN gets 200 OK")
     void testRoleBasedAuthorization() throws Exception {
-        // Register regular USER
         RegisterRequest userReq = RegisterRequest.builder()
                 .email("regular.user@example.com")
                 .password("UserPassword1!")

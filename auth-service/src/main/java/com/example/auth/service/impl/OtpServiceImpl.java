@@ -36,7 +36,6 @@ public class OtpServiceImpl implements OtpService {
                 Duration.ofMinutes(OTP_EXPIRY_MINUTES)
         );
 
-        // Later: replace this log with your actual email/SMS sending service.
         log.info("OTP generated and stored | email={} | expiresInMinutes={}",
                 email,
                 OTP_EXPIRY_MINUTES);

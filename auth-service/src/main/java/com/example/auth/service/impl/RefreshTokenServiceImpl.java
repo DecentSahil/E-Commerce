@@ -87,7 +87,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         UserAuth user = existingToken.getUser();
 
-        // Check if token was already revoked
         if (existingToken.isRevoked()) {
 
             log.warn(
@@ -123,7 +122,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             );
         }
 
-        // Check account status
         if (!user.getAccountStatus().isActive()) {
 
             log.warn(
