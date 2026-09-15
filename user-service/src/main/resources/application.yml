@@ -1,0 +1,47 @@
+server:
+  port: ${SERVER_PORT:8082}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ecommerce_user_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:1234}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      idle-timeout: 300000 # 5 minutes
+      connection-timeout: 20000 # 20 seconds
+      max-lifetime: 1200000 # 20 minutes
+      pool-name: UserHikariPool
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update # Flyway handles schema migrations
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
+    open-in-view: false # Prevent DB connection leaks across view layer
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+logging:
+  level:
+    root: INFO
+    com.example.user: DEBUG
