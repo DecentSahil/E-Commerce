@@ -1,19 +1,32 @@
 package com.example.wishlist.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import feign.FeignException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class ProductClientImpl implements ProductClient {
 
-    private static final Logger log = LoggerFactory.getLogger(ProductClientImpl.class);
+    private final ProductFeignClient productFeignClient;
 
     @Override
     public boolean existsById(UUID productId) {
-        log.debug("Verifying product existence for productId: {}", productId);
-        return productId != null;
+        if (productId == null) {
+            return false;
+        }
+        try {
+            return productFeignClient.getProductById(productId) != null;
+        } catch (FeignException.NotFound ex) {
+            log.warn("Product not found with id: {}", productId);
+            return false;
+        } catch (Exception ex) {
+            log.error("Error communicating with product-service for productId {}: {}", productId, ex.getMessage());
+            throw ex;
+        }
     }
 }
