@@ -104,6 +104,22 @@ public class ListingController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/deduct-stock")
+    public ResponseEntity<ListingResponse> deductStock(
+            @PathVariable UUID id,
+            @RequestParam int quantity
+    ) {
+        return ResponseEntity.ok(listingService.deductStock(id, quantity));
+    }
+
+    @PostMapping("/{id}/restore-stock")
+    public ResponseEntity<ListingResponse> restoreStock(
+            @PathVariable UUID id,
+            @RequestParam int quantity
+    ) {
+        return ResponseEntity.ok(listingService.restoreStock(id, quantity));
+    }
+
     private void verifySellerOrAdminRole(String role) {
         if (role != null && "USER".equalsIgnoreCase(role)) {
             throw new AccessDeniedException("Only SELLER or ADMIN users can create product listings");

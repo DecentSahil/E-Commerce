@@ -33,4 +33,8 @@ public interface ListingService {
             UUID currentUserId,
             String currentUserRole
     );
+
+    ListingResponse deductStock(UUID id, int quantity);
+
+    ListingResponse restoreStock(UUID id, int quantity);
 }

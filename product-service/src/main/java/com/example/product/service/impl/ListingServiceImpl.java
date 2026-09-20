@@ -190,6 +190,30 @@ public class ListingServiceImpl implements ListingService {
         listingRepository.delete(listing);
     }
 
+    @Override
+    public ListingResponse deductStock(UUID id, int quantity) {
+        Listing listing = findListingById(id);
+        int oldStock = listing.getStockQuantity();
+        listing.deductStock(quantity);
+        Listing saved = listingRepository.save(listing);
+        productEventPublisher.publishListingStockChanged(
+                saved.getId(), saved.getProduct().getId(), saved.getSellerId(), oldStock, saved.getStockQuantity()
+        );
+        return listingMapper.toResponse(saved);
+    }
+
+    @Override
+    public ListingResponse restoreStock(UUID id, int quantity) {
+        Listing listing = findListingById(id);
+        int oldStock = listing.getStockQuantity();
+        listing.restoreStock(quantity);
+        Listing saved = listingRepository.save(listing);
+        productEventPublisher.publishListingStockChanged(
+                saved.getId(), saved.getProduct().getId(), saved.getSellerId(), oldStock, saved.getStockQuantity()
+        );
+        return listingMapper.toResponse(saved);
+    }
+
     private Listing findListingById(UUID id) {
 
         return listingRepository.findById(id)

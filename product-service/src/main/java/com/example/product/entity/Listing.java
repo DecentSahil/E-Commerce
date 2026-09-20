@@ -116,4 +116,21 @@ public class Listing {
             this.status = ListingStatus.ACTIVE;
         }
     }
+
+    public void deductStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to deduct must be positive");
+        }
+        if (this.stockQuantity < quantity) {
+            throw new IllegalStateException("Insufficient stock for listing " + id + ". Available: " + this.stockQuantity + ", requested: " + quantity);
+        }
+        updateStock(this.stockQuantity - quantity);
+    }
+
+    public void restoreStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to restore must be positive");
+        }
+        updateStock(this.stockQuantity + quantity);
+    }
 }

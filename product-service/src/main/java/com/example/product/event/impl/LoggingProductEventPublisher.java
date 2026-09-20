@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@ConditionalOnMissingBean(name = "rabbitProductEventPublisher")
+@ConditionalOnMissingBean(ProductEventPublisher.class)
 public class LoggingProductEventPublisher implements ProductEventPublisher {
 
     @Override
