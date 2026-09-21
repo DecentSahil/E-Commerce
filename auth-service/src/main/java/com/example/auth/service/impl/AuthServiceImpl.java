@@ -19,6 +19,7 @@ import com.example.auth.repository.UserAuthRepository;
 import com.example.auth.security.JwtService;
 import com.example.auth.security.OtpAuthenticationToken;
 import com.example.auth.service.AuthService;
+import com.example.auth.service.OtpService;
 import com.example.auth.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
@@ -46,19 +46,15 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final JwtProperties jwtProperties;
     private final EventPublisher eventPublisher;
-    private final OtpRedisService otpRedisService;
-    private static final String OTP_PREFIX = "OTP:";
-    private static final long OTP_EXPIRY_MINUTES = 5;
+    private final OtpService otpService;
 
 
 
     public void sendOtp(SendOtpRequest request) {
 
-        String email = request.getEmail();
+        String email = request.getEmail().trim().toLowerCase();
 
-        String otp = generateOtp();
-
-        otpRedisService.saveOtp(email, otp);
+        String otp = otpService.generateAndStoreOtp(email);
 
         OtpPayload payload = new OtpPayload(email, otp);
 
@@ -78,12 +74,6 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-    private String generateOtp() {
-
-        int otp = 100000 + new Random().nextInt(900000);
-
-        return String.valueOf(otp);
-    }
 
     @Override
     @Transactional
@@ -98,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
                 normalizedEmail
         );
 
-        otpRedisService.verifyOtp(
+        otpService.verifyOtp(
                 normalizedEmail,
                 request.getOtp()
         );

@@ -105,6 +105,15 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Account is locked", request);
     }
 
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> InvalidOtpException(
+            InvalidOtpException ex, HttpServletRequest request) {
+        log.warn("Invalid Otp: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid Otp", request);
+    }
+
+
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(
             AccessDeniedException ex, HttpServletRequest request) {

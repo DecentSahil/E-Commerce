@@ -25,7 +25,7 @@ public class AuthController {
 
     @PostMapping("/send-otp")
     public ResponseEntity<String> sendOtp(
-            @RequestBody SendOtpRequest request) {
+            @Valid @RequestBody SendOtpRequest request) {
 
         authService.sendOtp(request);
 

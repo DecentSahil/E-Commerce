@@ -1,5 +1,6 @@
 package com.example.auth.service.impl;
 
+import com.example.auth.exception.InvalidOtpException;
 import com.example.auth.service.OtpService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ public class OtpServiceImpl implements OtpService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
-    public void generateAndStoreOtp(String email) {
+    public String generateAndStoreOtp(String email) {
 
         String otp = String.format(
                 "%06d",
@@ -36,9 +37,13 @@ public class OtpServiceImpl implements OtpService {
                 Duration.ofMinutes(OTP_EXPIRY_MINUTES)
         );
 
-        log.info("OTP generated and stored | email={} | expiresInMinutes={}",
+        log.info(
+                "OTP generated and stored | email={} | expiresInMinutes={}",
                 email,
-                OTP_EXPIRY_MINUTES);
+                OTP_EXPIRY_MINUTES
+        );
+
+        return otp;
     }
 
     @Override
@@ -53,14 +58,14 @@ public class OtpServiceImpl implements OtpService {
             log.warn("OTP verification failed: OTP expired or not found | email={}",
                     email);
 
-            throw new RuntimeException("OTP expired or not found");
+            throw new InvalidOtpException("OTP expired or not found");
         }
 
         if (!storedOtp.equals(otp)) {
             log.warn("OTP verification failed: invalid OTP | email={}",
                     email);
 
-            throw new RuntimeException("Invalid OTP");
+            throw new InvalidOtpException("Invalid OTP");
         }
 
         redisTemplate.delete(key);

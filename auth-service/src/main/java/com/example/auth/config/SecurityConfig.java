@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
-                                "/error"
+                                "/error",
+                                "/api/v1/auth/send-otp"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
