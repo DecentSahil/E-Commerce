@@ -1,10 +1,7 @@
 package com.example.auth.service.impl;
 
 import com.example.auth.config.JwtProperties;
-import com.example.auth.dto.request.LoginRequest;
-import com.example.auth.dto.request.OtpLoginRequest;
-import com.example.auth.dto.request.RefreshTokenRequest;
-import com.example.auth.dto.request.RegisterRequest;
+import com.example.auth.dto.request.*;
 import com.example.auth.dto.response.AuthResponse;
 import com.example.auth.dto.response.UserResponse;
 import com.example.auth.entity.AccountStatus;
@@ -12,6 +9,7 @@ import com.example.auth.entity.Role;
 import com.example.auth.entity.UserAuth;
 import com.example.auth.event.EventEnvelope;
 import com.example.auth.event.EventPublisher;
+import com.example.auth.event.payload.OtpPayload;
 import com.example.auth.event.payload.UserRegisteredPayload;
 import com.example.auth.exception.AccountDisabledException;
 import com.example.auth.exception.DuplicateResourceException;
@@ -32,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Random;
 import java.util.UUID;
 
 @Slf4j
@@ -47,7 +46,44 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final JwtProperties jwtProperties;
     private final EventPublisher eventPublisher;
+    private final OtpRedisService otpRedisService;
+    private static final String OTP_PREFIX = "OTP:";
+    private static final long OTP_EXPIRY_MINUTES = 5;
 
+
+
+    public void sendOtp(SendOtpRequest request) {
+
+        String email = request.getEmail();
+
+        String otp = generateOtp();
+
+        otpRedisService.saveOtp(email, otp);
+
+        OtpPayload payload = new OtpPayload(email, otp);
+
+        EventEnvelope<OtpPayload> event =
+                new EventEnvelope<>(
+                        UUID.randomUUID(),
+                        "OTP_REQUESTED",
+                        1,
+                        Instant.now(),
+                        payload
+                );
+
+        eventPublisher.publish(
+                "otp-events",
+                email,
+                event
+        );
+    }
+
+    private String generateOtp() {
+
+        int otp = 100000 + new Random().nextInt(900000);
+
+        return String.valueOf(otp);
+    }
 
     @Override
     @Transactional
@@ -60,6 +96,11 @@ public class AuthServiceImpl implements AuthService {
         log.info(
                 "User registration started | email={}",
                 normalizedEmail
+        );
+
+        otpRedisService.verifyOtp(
+                normalizedEmail,
+                request.getOtp()
         );
 
         if (userAuthRepository.existsByEmailIgnoreCase(normalizedEmail)) {
@@ -371,4 +412,5 @@ public class AuthServiceImpl implements AuthService {
 
         return userMapper.toUserResponse(user);
     }
+
 }

@@ -20,7 +20,30 @@ public class KafkaEventPublisher implements EventPublisher {
     ) {
         log.info("Publishing event to Kafka | topic={} | key={} | eventId={}", topic, key, event.eventId());
         try {
-            kafkaTemplate.send(topic, key, event);
+            kafkaTemplate
+                    .send(topic, key, event)
+                    .whenComplete((result, ex) -> {
+
+                        if (ex != null) {
+
+                            log.error(
+                                    "Failed to publish event | topic={} | key={} | eventId={}",
+                                    topic,
+                                    key,
+                                    event.eventId(),
+                                    ex
+                            );
+
+                            return;
+                        }
+
+                        log.info(
+                                "Event published successfully | topic={} | key={} | eventId={}",
+                                topic,
+                                key,
+                                event.eventId()
+                        );
+                    });
         } catch (Exception ex) {
             log.error("Failed to publish event to topic {}: {}", topic, ex.getMessage(), ex);
         }

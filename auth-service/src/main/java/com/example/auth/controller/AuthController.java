@@ -1,9 +1,6 @@
 package com.example.auth.controller;
 
-import com.example.auth.dto.request.LoginRequest;
-import com.example.auth.dto.request.OtpLoginRequest;
-import com.example.auth.dto.request.RefreshTokenRequest;
-import com.example.auth.dto.request.RegisterRequest;
+import com.example.auth.dto.request.*;
 import com.example.auth.dto.response.AuthResponse;
 import com.example.auth.dto.response.MessageResponse;
 import com.example.auth.dto.response.UserResponse;
@@ -25,6 +22,15 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendOtp(
+            @RequestBody SendOtpRequest request) {
+
+        authService.sendOtp(request);
+
+        return ResponseEntity.ok("OTP sent successfully");
+    }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
