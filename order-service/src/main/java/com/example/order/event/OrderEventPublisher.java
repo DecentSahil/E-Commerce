@@ -16,4 +16,5 @@ public interface OrderEventPublisher {
     void publishOrderCancelled(UUID orderId, String orderNumber, UUID authUserId, String reason);
 
     void publishOrderDelivered(UUID orderId, String orderNumber, UUID authUserId);
+
 }

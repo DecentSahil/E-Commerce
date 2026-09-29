@@ -8,10 +8,10 @@ import java.util.UUID;
 
 @Entity
 @Table(
-    name = "addresses",
-    indexes = {
-        @Index(name = "idx_addresses_user_id", columnList = "user_id")
-    }
+        name = "addresses",
+        indexes = {
+                @Index(name = "idx_addresses_user_id", columnList = "user_id")
+        }
 )
 @Getter
 @Setter
@@ -25,8 +25,18 @@ public class Address {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_addresses_user"))
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_addresses_user")
+    )
     private UserProfile user;
+
+    @Column(name = "recipient_name", nullable = false, length = 150)
+    private String recipientName;
+
+    @Column(name = "phone", length = 30)
+    private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "address_type", nullable = false, length = 50)
@@ -48,8 +58,13 @@ public class Address {
     @Column(name = "postal_code", nullable = false, length = 20)
     private String postalCode;
 
+    // Existing display value, e.g. "India"
     @Column(name = "country", nullable = false, length = 100)
     private String country;
+
+    // Transactional ISO code, e.g. "IN"
+    @Column(name = "country_code", nullable = false, length = 3)
+    private String countryCode;
 
     @Column(name = "is_default", nullable = false)
     @Builder.Default
@@ -63,10 +78,13 @@ public class Address {
 
     @PrePersist
     protected void onCreate() {
+
         if (this.id == null) {
             this.id = UUID.randomUUID();
         }
+
         Instant now = Instant.now();
+
         this.createdAt = now;
         this.updatedAt = now;
     }

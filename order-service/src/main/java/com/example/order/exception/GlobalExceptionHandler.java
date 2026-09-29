@@ -24,6 +24,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(DuplicateIdempotencyKeyException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateIdempotencyKeyException(
+            DuplicateIdempotencyKeyException ex,
+            WebRequest request) {
+
+        log.warn("Duplicate idempotency key: {}", ex.getMessage());
+
+        return buildError(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request
+        );
+    }
+
     @ExceptionHandler(InvalidOrderStateException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidOrderState(
             InvalidOrderStateException ex, WebRequest request) {

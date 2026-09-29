@@ -1,72 +1,164 @@
 package com.example.order.client;
 
-import com.example.order.config.ServiceClientProperties;
+import com.example.order.client.dto.ListingDto;
+import com.example.order.client.dto.ProductDto;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProductClientImpl implements ProductClient {
 
-    private final RestTemplate restTemplate;
-    private final ServiceClientProperties serviceClientProperties;
+    private final ProductFeignClient productFeignClient;
 
     @Override
-    public boolean checkAvailability(UUID productId, int quantity) {
+    public boolean checkAvailability(
+            UUID productId,
+            int quantity) {
+
         try {
-            String url = serviceClientProperties.getProductServiceUrl()
-                    + "/api/v1/products/" + productId + "/availability?quantity=" + quantity;
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            ProductDto product =
+                    productFeignClient.getProductById(productId);
 
-            if (response != null && response.containsKey("available")) {
-                return Boolean.TRUE.equals(response.get("available"));
-            }
+            return product != null;
 
-            log.warn("[TEMP-SYNC] Unexpected availability response format for product {}. " +
-                     "Permissive fallback: assuming available.", productId);
-            return true;
+        } catch (FeignException.NotFound e) {
+
+            log.warn(
+                    "Product not found: {}",
+                    productId
+            );
+
+            return false;
 
         } catch (Exception e) {
-            log.warn("[TEMP-SYNC] Could not reach Product Service for availability check on product {}. " +
-                     "Permissive fallback: assuming available. Error: {}", productId, e.getMessage());
-            return true;
+
+            log.error(
+                    "Failed to reach Product Service for product {}",
+                    productId,
+                    e
+            );
+
+            throw e;
         }
     }
 
     @Override
-    public BigDecimal getCurrentPrice(UUID productId) {
+    public Optional<ProductDto> getProduct(
+            UUID productId) {
+
         try {
-            String url = serviceClientProperties.getProductServiceUrl()
-                    + "/api/v1/products/" + productId;
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            ProductDto product =
+                    productFeignClient.getProductById(productId);
 
-            if (response != null && response.containsKey("price")) {
-                Object price = response.get("price");
-                if (price instanceof Number n) {
-                    return BigDecimal.valueOf(n.doubleValue());
-                }
-                if (price instanceof String s) {
-                    return new BigDecimal(s);
-                }
-            }
-            return null;
+            return Optional.ofNullable(product);
+
+        } catch (FeignException.NotFound e) {
+
+            log.warn(
+                    "Product not found: {}",
+                    productId
+            );
+
+            return Optional.empty();
 
         } catch (Exception e) {
-            log.warn("[TEMP-SYNC] Could not reach Product Service for price of product {}. " +
-                     "Error: {}", productId, e.getMessage());
-            return null;
+
+            log.error(
+                    "Failed to retrieve product {}",
+                    productId,
+                    e
+            );
+
+            throw e;
+        }
+    }
+
+    @Override
+    public Optional<ListingDto> getListing(
+            UUID listingId) {
+
+        try {
+
+            ListingDto listing =
+                    productFeignClient.getListingById(listingId);
+
+            return Optional.ofNullable(listing);
+
+        } catch (FeignException.NotFound e) {
+
+            log.warn(
+                    "Listing not found: {}",
+                    listingId
+            );
+
+            return Optional.empty();
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Failed to retrieve listing {}",
+                    listingId,
+                    e
+            );
+
+            throw e;
+        }
+    }
+
+    @Override
+    public void deductStock(
+            UUID listingId,
+            int quantity) {
+
+        try {
+
+            productFeignClient.deductStock(
+                    listingId,
+                    quantity
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Failed to deduct stock for listing {}",
+                    listingId,
+                    e
+            );
+
+            throw e;
+        }
+    }
+
+    @Override
+    public void restoreStock(
+            UUID listingId,
+            int quantity) {
+
+        try {
+
+            productFeignClient.restoreStock(
+                    listingId,
+                    quantity
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Failed to restore stock for listing {}",
+                    listingId,
+                    e
+            );
+
+            throw e;
         }
     }
 }

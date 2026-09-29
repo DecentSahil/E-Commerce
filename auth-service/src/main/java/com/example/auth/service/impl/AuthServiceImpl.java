@@ -140,7 +140,7 @@ public class AuthServiceImpl implements AuthService {
                 );
 
         eventPublisher.publish(
-                "user-events",
+                "auth-events",
                 savedUser.getId().toString(),
                 event
         );

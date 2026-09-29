@@ -4,6 +4,7 @@ import com.example.user.dto.request.AddressRequest;
 import com.example.user.dto.response.AddressResponse;
 import com.example.user.entity.Address;
 import com.example.user.entity.UserProfile;
+import com.example.user.exception.BadRequestException;
 import com.example.user.exception.ResourceNotFoundException;
 import com.example.user.mapper.AddressMapper;
 import com.example.user.repository.AddressRepository;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -38,6 +40,24 @@ public class AddressServiceImpl implements AddressService {
                 .toList();
     }
 
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public AddressResponse getAddress(UUID userId, UUID addressId) {
+
+        UserProfile user = getUserProfileOrThrow(userId);
+
+        Address address = addressRepository
+                .findByIdAndUser(addressId, user)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Address not found with ID: " + addressId
+                        )
+                );
+
+        return addressMapper.toResponse(address);
+    }
     @Override
     @Transactional
     public AddressResponse addAddress(
@@ -110,6 +130,7 @@ public class AddressServiceImpl implements AddressService {
 
         addressRepository.delete(address);
     }
+
 
     private UserProfile getUserProfileOrThrow(UUID userId) {
 

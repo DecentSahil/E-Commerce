@@ -1,6 +1,6 @@
 package com.example.order.mapper;
 
-import com.example.order.dto.*;
+import com.example.order.dto.response.*;
 import com.example.order.entity.Order;
 import com.example.order.entity.OrderItem;
 import com.example.order.entity.OrderStatusHistory;

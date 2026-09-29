@@ -9,11 +9,15 @@ import org.springframework.stereotype.Component;
 public class AddressMapper {
 
     public AddressResponse toResponse(Address address) {
+
         if (address == null) {
             return null;
         }
+
         return AddressResponse.builder()
                 .id(address.getId())
+                .recipientName(address.getRecipientName())
+                .phone(address.getPhone())
                 .addressType(address.getAddressType())
                 .addressLine1(address.getAddressLine1())
                 .addressLine2(address.getAddressLine2())
@@ -21,6 +25,7 @@ public class AddressMapper {
                 .state(address.getState())
                 .postalCode(address.getPostalCode())
                 .country(address.getCountry())
+                .countryCode(address.getCountryCode())
                 .isDefault(address.isDefault())
                 .createdAt(address.getCreatedAt())
                 .updatedAt(address.getUpdatedAt())
@@ -28,10 +33,14 @@ public class AddressMapper {
     }
 
     public Address toEntity(AddressRequest request) {
+
         if (request == null) {
             return null;
         }
+
         return Address.builder()
+                .recipientName(request.getRecipientName())
+                .phone(request.getPhone())
                 .addressType(request.getAddressType())
                 .addressLine1(request.getAddressLine1())
                 .addressLine2(request.getAddressLine2())
@@ -39,6 +48,7 @@ public class AddressMapper {
                 .state(request.getState())
                 .postalCode(request.getPostalCode())
                 .country(request.getCountry())
+                .countryCode(request.getCountryCode())
                 .isDefault(request.isDefault())
                 .build();
     }

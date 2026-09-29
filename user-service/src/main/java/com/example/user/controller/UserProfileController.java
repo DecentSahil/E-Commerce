@@ -19,31 +19,31 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserProfileResponse> getProfile(@PathVariable("userId") UUID userId) {
-        UserProfileResponse response = userProfileService.getProfile(userId);
+    @GetMapping("/{authUserId}")
+    public ResponseEntity<UserProfileResponse> getProfile(@PathVariable("authUserId") UUID authUserId) {
+        UserProfileResponse response = userProfileService.getProfile(authUserId);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{userId}")
+    @PutMapping("/{authUserId}")
     public ResponseEntity<UserProfileResponse> updateProfile(
-            @PathVariable("userId") UUID userId,
+            @PathVariable("authUserId") UUID authUserId,
             @Valid @RequestBody UpdateUserProfileRequest request) {
-        UserProfileResponse response = userProfileService.updateProfile(userId, request);
+        UserProfileResponse response = userProfileService.updateProfile(authUserId, request);
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{userId}")
+    @PatchMapping("/{authUserId}")
     public ResponseEntity<UserProfileResponse> patchProfile(
-            @PathVariable("userId") UUID userId,
+            @PathVariable("authUserId") UUID authUserId,
             @Valid @RequestBody PatchUserProfileRequest request) {
-        UserProfileResponse response = userProfileService.patchProfile(userId, request);
+        UserProfileResponse response = userProfileService.patchProfile(authUserId, request);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<MessageResponse> deleteProfile(@PathVariable("userId") UUID userId) {
-        userProfileService.deleteProfile(userId);
+    @DeleteMapping("/{authUserId}")
+    public ResponseEntity<MessageResponse> deleteProfile(@PathVariable("authUserId") UUID authUserId) {
+        userProfileService.deleteProfile(authUserId);
         return ResponseEntity.ok(new MessageResponse("User profile deleted successfully"));
     }
 }

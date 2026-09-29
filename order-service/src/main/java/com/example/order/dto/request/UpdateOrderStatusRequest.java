@@ -1,4 +1,4 @@
-package com.example.order.dto;
+package com.example.order.dto.request;
 
 import com.example.order.entity.OrderStatus;
 import jakarta.validation.constraints.NotNull;

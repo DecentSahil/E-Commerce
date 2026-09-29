@@ -1,6 +1,12 @@
 package com.example.order.controller;
 
-import com.example.order.dto.*;
+import com.example.order.dto.request.CheckoutCartRequest;
+import com.example.order.dto.request.CreateOrderRequest;
+import com.example.order.dto.request.UpdateOrderStatusRequest;
+import com.example.order.dto.response.OrderResponse;
+import com.example.order.dto.response.OrderStatusHistoryResponse;
+import com.example.order.dto.response.OrderSummaryResponse;
+import com.example.order.saga.service.OrderSagaOrchestrator;
 import com.example.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +31,8 @@ public class OrderController {
     private static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_ROLE_HEADER = "X-User-Role";
-
     private final OrderService orderService;
+    private final OrderSagaOrchestrator orderSagaOrchestrator;
 
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(
@@ -36,7 +42,11 @@ public class OrderController {
             @RequestHeader(USER_ID_HEADER) UUID authUserId) {
 
         OrderResponse response =
-                orderService.createOrder(authUserId, idempotencyKey, request);
+                orderSagaOrchestrator.createOrder(
+                        authUserId,
+                        idempotencyKey,
+                        request
+                );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

@@ -32,6 +32,16 @@ public class AddressController {
         return ResponseEntity.ok(addresses);
     }
 
+    @GetMapping("/{addressId}")
+    public ResponseEntity<AddressResponse> getAddress(
+            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @PathVariable UUID addressId) {
+
+        return ResponseEntity.ok(
+                addressService.getAddress(userId, addressId)
+        );
+    }
+
     @PostMapping
     public ResponseEntity<AddressResponse> addAddress(
             @RequestHeader(USER_ID_HEADER) UUID userId,

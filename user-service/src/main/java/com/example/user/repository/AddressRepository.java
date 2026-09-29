@@ -14,5 +14,6 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
 
     List<Address> findByUserOrderByCreatedAtDesc(UserProfile user);
 
+
     Optional<Address> findByIdAndUser(UUID id, UserProfile user);
 }

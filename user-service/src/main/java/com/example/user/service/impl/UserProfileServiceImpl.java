@@ -57,7 +57,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(UUID userId) {
 
-        UserProfile profile = userProfileRepository.findById(userId)
+        UserProfile profile = userProfileRepository.findByAuthUserId(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User profile not found for ID: " + userId
@@ -72,7 +72,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             UUID userId,
             UpdateUserProfileRequest request) {
 
-        UserProfile profile = userProfileRepository.findById(userId)
+        UserProfile profile = userProfileRepository.findByAuthUserId(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User profile not found for ID: " + userId
@@ -94,7 +94,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             UUID userId,
             PatchUserProfileRequest request) {
 
-        UserProfile profile = userProfileRepository.findById(userId)
+        UserProfile profile = userProfileRepository.findByAuthUserId(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User profile not found for ID: " + userId
@@ -125,7 +125,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional
     public void deleteProfile(UUID userId) {
 
-        UserProfile profile = userProfileRepository.findById(userId)
+        UserProfile profile = userProfileRepository.findByAuthUserId(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User profile not found for ID: " + userId
