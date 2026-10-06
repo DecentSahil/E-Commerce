@@ -79,10 +79,22 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Actuator for health checks -->
+		<!-- Actuator for health checks and refresh endpoint -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Spring Cloud Config Client -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+
+		<!-- Spring Cloud Bus AMQP for centralized refresh propagation -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-bus-amqp</artifactId>
 		</dependency>
 
 		<!-- Lombok -->

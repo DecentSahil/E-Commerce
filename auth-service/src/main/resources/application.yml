@@ -1,73 +1,9 @@
-server:
-  port: ${SERVER_PORT:8081}
-  servlet:
-    context-path: /
-
 spring:
   application:
     name: auth-service
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: ${spring.application.name}-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      properties:
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.trusted.packages: "*"
 
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ecommerce_auth_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:1234}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
-      minimum-idle: ${DB_POOL_MIN_IDLE:5}
-      idle-timeout: 300000
-      connection-timeout: 20000
-      max-lifetime: 1200000
-      pool-name: AuthHikariPool
+  profiles:
+    active: dev
 
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
-    show-sql: ${SPRING_JPA_SHOW_SQL:false}
-    open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
-        jdbc:
-          batch_size: 25
-        order_inserts: true
-        order_updates: true
-
-
-application:
-  security:
-    jwt:
-      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-      access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:900000}
-      refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}
-      issuer: ${JWT_ISSUER:ecommerce-auth-service}
-
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-logging:
-  level:
-    root: INFO
-    com.example.auth: DEBUG
-    org.springframework.security: INFO
+  config:
+    import: "optional:configserver:http://localhost:8888"

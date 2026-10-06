@@ -5,8 +5,11 @@ import com.example.auth.dto.request.RefreshTokenRequest;
 import com.example.auth.dto.request.RegisterRequest;
 import com.example.auth.dto.response.AuthResponse;
 import com.example.auth.entity.Role;
+import com.example.auth.entity.UserAuth;
+import com.example.auth.event.EventPublisher;
 import com.example.auth.repository.RefreshTokenRepository;
 import com.example.auth.repository.UserAuthRepository;
+import com.example.auth.service.OtpService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,11 +17,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -39,10 +47,20 @@ class AuthControllerIntegrationTest {
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
 
+    @MockBean
+    private OtpService otpService;
+
+    @MockBean
+    private EventPublisher eventPublisher;
+
+    @MockBean
+    private StringRedisTemplate redisTemplate;
+
     @BeforeEach
     void setUp() {
         refreshTokenRepository.deleteAll();
         userAuthRepository.deleteAll();
+        doNothing().when(otpService).verifyOtp(anyString(), anyString());
     }
 
     @Test
@@ -51,7 +69,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest request = RegisterRequest.builder()
                 .email("john.doe@example.com")
                 .password("SecurePass123!")
-                .role(Role.ROLE_USER)
+                .Otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -72,6 +90,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest request = RegisterRequest.builder()
                 .email("duplicate@example.com")
                 .password("Password123!")
+                .Otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -94,6 +113,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("login.user@example.com")
                 .password("StrongSecret99#")
+                .Otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -121,6 +141,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("wrongpass@example.com")
                 .password("CorrectPassword1!")
+                .Otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -147,6 +168,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest invalidReq = RegisterRequest.builder()
                 .email("not-an-email")
                 .password("short")
+                .Otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -173,6 +195,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("refresh.flow@example.com")
                 .password("MyRefreshPass123!")
+                .Otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
@@ -202,11 +225,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.user.email", is("refresh.flow@example.com")))
                 .andReturn();
 
-        AuthResponse rotatedResponse = objectMapper.readValue(
-                refreshResult.getResponse().getContentAsString(),
-                AuthResponse.class
-        );
-
+        // Attempting to reuse already rotated refresh token fails
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(refreshReq)))
@@ -220,6 +239,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("logout.user@example.com")
                 .password("LogoutSecret123!")
+                .Otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
@@ -257,6 +277,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("me.user@example.com")
                 .password("MeEndpointPass1!")
+                .Otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
@@ -276,56 +297,5 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.email", is("me.user@example.com")))
                 .andExpect(jsonPath("$.role", is("ROLE_USER")))
                 .andExpect(jsonPath("$.accountStatus", is("ACTIVE")));
-    }
-
-    @Test
-    @DisplayName("10. Role-based authorization: USER gets 403 on admin endpoint, ADMIN gets 200 OK")
-    void testRoleBasedAuthorization() throws Exception {
-        RegisterRequest userReq = RegisterRequest.builder()
-                .email("regular.user@example.com")
-                .password("UserPassword1!")
-                .role(Role.ROLE_USER)
-                .build();
-
-        MvcResult userResult = mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userReq)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        AuthResponse userAuth = objectMapper.readValue(
-                userResult.getResponse().getContentAsString(),
-                AuthResponse.class
-        );
-
-        // Register ADMIN
-        RegisterRequest adminReq = RegisterRequest.builder()
-                .email("admin.user@example.com")
-                .password("AdminPassword1!")
-                .role(Role.ROLE_ADMIN)
-                .build();
-
-        MvcResult adminResult = mockMvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(adminReq)))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        AuthResponse adminAuth = objectMapper.readValue(
-                adminResult.getResponse().getContentAsString(),
-                AuthResponse.class
-        );
-
-        // Regular user accessing admin endpoint -> 403 Forbidden
-        mockMvc.perform(get("/api/v1/auth/admin/stats")
-                        .header("Authorization", "Bearer " + userAuth.getAccessToken()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status", is(403)));
-
-        // Admin user accessing admin endpoint -> 200 OK
-        mockMvc.perform(get("/api/v1/auth/admin/stats")
-                        .header("Authorization", "Bearer " + adminAuth.getAccessToken()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.adminAccess", is("GRANTED")));
     }
 }

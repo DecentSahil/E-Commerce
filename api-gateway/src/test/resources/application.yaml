@@ -1,3 +1,13 @@
+# Test configuration — overrides main application.yaml for unit/integration tests.
+# Config Server import is disabled so tests run without a running Config Server.
+
+spring:
+  config:
+    import: "optional:configserver:"  # Disable Config Server lookup during tests
+
+  main:
+    web-application-type: reactive
+
 eureka:
   client:
     enabled: false
