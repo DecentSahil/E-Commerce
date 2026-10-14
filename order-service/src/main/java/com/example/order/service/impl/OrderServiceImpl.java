@@ -149,7 +149,7 @@ public class OrderServiceImpl implements OrderService {
         java.util.List<OrderItem> deductedItems = new java.util.ArrayList<>();
         try {
             for (CartItemDto cartItem : cart.getItems()) {
-                com.example.order.client.dto.ListingDto listing = null;
+                ListingDto listing = null;
                 if (cartItem.getListingId() != null) {
                     listing = productClient.getListing(cartItem.getListingId())
                             .orElseThrow(() -> new InvalidOrderStateException("Listing not found: " + cartItem.getListingId()));

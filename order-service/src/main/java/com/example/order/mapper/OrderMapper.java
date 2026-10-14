@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @Component
 public class OrderMapper {
 
-    // ── Entity → Response ─────────────────────────────────────────────────────
 
     public OrderResponse toOrderResponse(Order order) {
         return OrderResponse.builder()
@@ -90,7 +89,6 @@ public class OrderMapper {
                 .collect(Collectors.toList());
     }
 
-    // ── Shipping Address ───────────────────────────────────────────────────────
 
     private ShippingAddressResponse toShippingAddressResponse(Order order) {
         return ShippingAddressResponse.builder()
