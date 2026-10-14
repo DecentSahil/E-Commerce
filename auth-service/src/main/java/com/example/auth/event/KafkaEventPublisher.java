@@ -23,9 +23,7 @@ public class KafkaEventPublisher implements EventPublisher {
             kafkaTemplate
                     .send(topic, key, event)
                     .whenComplete((result, ex) -> {
-
                         if (ex != null) {
-
                             log.error(
                                     "Failed to publish event | topic={} | key={} | eventId={}",
                                     topic,
@@ -33,10 +31,8 @@ public class KafkaEventPublisher implements EventPublisher {
                                     event.eventId(),
                                     ex
                             );
-
                             return;
                         }
-
                         log.info(
                                 "Event published successfully | topic={} | key={} | eventId={}",
                                 topic,
