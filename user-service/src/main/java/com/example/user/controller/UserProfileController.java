@@ -17,7 +17,43 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserProfileController {
 
+    private static final String USER_ID_HEADER = "X-User-Id";
+
     private final UserProfileService userProfileService;
+
+    // --- Current User (/me) Endpoints ---
+
+    @GetMapping("/me")
+    public ResponseEntity<UserProfileResponse> getCurrentProfile(
+            @RequestHeader(USER_ID_HEADER) UUID authUserId) {
+        UserProfileResponse response = userProfileService.getProfile(authUserId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserProfileResponse> updateCurrentProfile(
+            @RequestHeader(USER_ID_HEADER) UUID authUserId,
+            @Valid @RequestBody UpdateUserProfileRequest request) {
+        UserProfileResponse response = userProfileService.updateProfile(authUserId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserProfileResponse> patchCurrentProfile(
+            @RequestHeader(USER_ID_HEADER) UUID authUserId,
+            @Valid @RequestBody PatchUserProfileRequest request) {
+        UserProfileResponse response = userProfileService.patchProfile(authUserId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<MessageResponse> deleteCurrentProfile(
+            @RequestHeader(USER_ID_HEADER) UUID authUserId) {
+        userProfileService.deleteProfile(authUserId);
+        return ResponseEntity.ok(new MessageResponse("User profile deleted successfully"));
+    }
+
+    // --- Direct Endpoints by UUID ---
 
     @GetMapping("/{authUserId}")
     public ResponseEntity<UserProfileResponse> getProfile(@PathVariable("authUserId") UUID authUserId) {

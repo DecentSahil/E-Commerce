@@ -82,4 +82,15 @@ public class AddressController {
                 new MessageResponse("Address deleted successfully")
         );
     }
+
+    @PatchMapping("/{addressId}/default")
+    public ResponseEntity<AddressResponse> setDefaultAddress(
+            @RequestHeader(USER_ID_HEADER) UUID userId,
+            @PathVariable UUID addressId) {
+
+        AddressResponse response =
+                addressService.setDefaultAddress(userId, addressId);
+
+        return ResponseEntity.ok(response);
+    }
 }

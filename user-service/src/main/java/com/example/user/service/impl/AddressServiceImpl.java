@@ -66,13 +66,18 @@ public class AddressServiceImpl implements AddressService {
 
         UserProfile user = getUserProfileOrThrow(userId);
 
-        if (request.isDefault()) {
+        List<Address> existingAddresses =
+                addressRepository.findByUserOrderByCreatedAtDesc(user);
+        boolean isFirstAddress = existingAddresses.isEmpty();
+        boolean shouldBeDefault = request.isDefault() || isFirstAddress;
+
+        if (shouldBeDefault && !existingAddresses.isEmpty()) {
             unsetDefaultAddresses(user);
         }
 
         Address address = addressMapper.toEntity(request);
-
         address.setUser(user);
+        address.setDefault(shouldBeDefault);
 
         Address saved = addressRepository.save(address);
 
@@ -99,6 +104,8 @@ public class AddressServiceImpl implements AddressService {
             unsetDefaultAddresses(user);
         }
 
+        address.setRecipientName(request.getRecipientName());
+        address.setPhone(request.getPhone());
         address.setAddressType(request.getAddressType());
         address.setAddressLine1(request.getAddressLine1());
         address.setAddressLine2(request.getAddressLine2());
@@ -106,11 +113,33 @@ public class AddressServiceImpl implements AddressService {
         address.setState(request.getState());
         address.setPostalCode(request.getPostalCode());
         address.setCountry(request.getCountry());
+        address.setCountryCode(request.getCountryCode());
         address.setDefault(request.isDefault());
 
         Address updated = addressRepository.save(address);
 
         return addressMapper.toResponse(updated);
+    }
+
+    @Override
+    @Transactional
+    public AddressResponse setDefaultAddress(UUID userId, UUID addressId) {
+        UserProfile user = getUserProfileOrThrow(userId);
+
+        Address address = addressRepository
+                .findByIdAndUser(addressId, user)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Address not found with ID: " + addressId
+                        ));
+
+        if (!address.isDefault()) {
+            unsetDefaultAddresses(user);
+            address.setDefault(true);
+            address = addressRepository.save(address);
+        }
+
+        return addressMapper.toResponse(address);
     }
 
     @Override
@@ -128,13 +157,23 @@ public class AddressServiceImpl implements AddressService {
                                 "Address not found with ID: " + addressId
                         ));
 
+        boolean wasDefault = address.isDefault();
         addressRepository.delete(address);
+
+        if (wasDefault) {
+            List<Address> remaining = addressRepository.findByUserOrderByCreatedAtDesc(user);
+            if (!remaining.isEmpty()) {
+                Address newDefault = remaining.get(0);
+                newDefault.setDefault(true);
+                addressRepository.save(newDefault);
+            }
+        }
     }
 
 
     private UserProfile getUserProfileOrThrow(UUID userId) {
 
-        return userProfileRepository.findById(userId)
+        return userProfileRepository.findByAuthUserId(userId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "User profile not found for ID: " + userId

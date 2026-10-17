@@ -76,9 +76,18 @@ public class UserEventConsumerImpl implements UserEventConsumer {
             return;
         }
 
+        String normalizedEmail = event.getEmail() != null ? event.getEmail().trim().toLowerCase() : "";
+        if (!normalizedEmail.isBlank()) {
+            java.util.Optional<UserProfile> existingByEmail = userProfileRepository.findByEmailIgnoreCase(normalizedEmail);
+            if (existingByEmail.isPresent()) {
+                log.warn("UserProfile already exists with email: {}. Skipping duplicate event.", normalizedEmail);
+                return;
+            }
+        }
+
         UserProfile profile = UserProfile.builder()
                 .authUserId(event.getUserId())
-                .email(event.getEmail() != null ? event.getEmail().trim().toLowerCase() : "")
+                .email(normalizedEmail)
                 .build();
 
         userProfileRepository.save(profile);

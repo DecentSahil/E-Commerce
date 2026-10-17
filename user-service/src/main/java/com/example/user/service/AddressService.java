@@ -17,4 +17,6 @@ public interface AddressService {
     void deleteAddress(UUID authUserId, UUID addressId);
 
     AddressResponse getAddress(UUID userId, UUID addressId);
+
+    AddressResponse setDefaultAddress(UUID userId, UUID addressId);
 }
