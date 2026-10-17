@@ -69,7 +69,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest request = RegisterRequest.builder()
                 .email("john.doe@example.com")
                 .password("SecurePass123!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -90,7 +90,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest request = RegisterRequest.builder()
                 .email("duplicate@example.com")
                 .password("Password123!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -113,7 +113,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("login.user@example.com")
                 .password("StrongSecret99#")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -141,7 +141,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("wrongpass@example.com")
                 .password("CorrectPassword1!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -168,7 +168,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest invalidReq = RegisterRequest.builder()
                 .email("not-an-email")
                 .password("short")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -195,7 +195,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("refresh.flow@example.com")
                 .password("MyRefreshPass123!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
@@ -239,7 +239,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("logout.user@example.com")
                 .password("LogoutSecret123!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
@@ -277,7 +277,7 @@ class AuthControllerIntegrationTest {
         RegisterRequest registerReq = RegisterRequest.builder()
                 .email("me.user@example.com")
                 .password("MeEndpointPass1!")
-                .Otp("123456")
+                .otp("123456")
                 .build();
 
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")

@@ -104,7 +104,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             );
         }
 
-        // Check expiration
         if (existingToken.isExpired()) {
 
             log.warn(

@@ -1,5 +1,3 @@
-# Test configuration — overrides main application.yml for unit/integration tests.
-# Config Server import is disabled so tests run without a running Config Server.
 
 spring:
   config:
