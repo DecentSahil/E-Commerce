@@ -18,7 +18,6 @@ import java.util.UUID;
 public class UserEventConsumerImpl implements UserEventConsumer {
 
     private final UserProfileRepository userProfileRepository;
-//    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "auth-events", groupId = "user-service-group")
     public void onMessage(Map<?, ?> map) {

@@ -21,8 +21,6 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
 
-    // --- Current User (/me) Endpoints ---
-
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getCurrentProfile(
             @RequestHeader(USER_ID_HEADER) UUID authUserId) {
@@ -52,8 +50,6 @@ public class UserProfileController {
         userProfileService.deleteProfile(authUserId);
         return ResponseEntity.ok(new MessageResponse("User profile deleted successfully"));
     }
-
-    // --- Direct Endpoints by UUID ---
 
     @GetMapping("/{authUserId}")
     public ResponseEntity<UserProfileResponse> getProfile(@PathVariable("authUserId") UUID authUserId) {

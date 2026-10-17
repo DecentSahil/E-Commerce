@@ -25,6 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
 CREATE TABLE IF NOT EXISTS addresses (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
+    recipient_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30),
     address_type VARCHAR(50) NOT NULL DEFAULT 'HOME',
     address_line1 VARCHAR(255) NOT NULL,
     address_line2 VARCHAR(255),
@@ -32,6 +34,7 @@ CREATE TABLE IF NOT EXISTS addresses (
     state VARCHAR(100) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL,
+    country_code VARCHAR(3) NOT NULL DEFAULT 'IN',
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

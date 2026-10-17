@@ -58,11 +58,9 @@ public class Address {
     @Column(name = "postal_code", nullable = false, length = 20)
     private String postalCode;
 
-    // Existing display value, e.g. "India"
     @Column(name = "country", nullable = false, length = 100)
     private String country;
 
-    // Transactional ISO code, e.g. "IN"
     @Column(name = "country_code", nullable = false, length = 3)
     private String countryCode;
 
