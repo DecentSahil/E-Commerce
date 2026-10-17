@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            padding: 32px 24px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 32px;
+        }
+        .order-badge {
+            display: inline-block;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .order-table th {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 2px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        .order-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+        }
+        .total-row {
+            font-weight: 700;
+            font-size: 16px;
+            color: #111827;
+            background-color: #f9fafb;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Order Confirmed!</h1>
+    </div>
+    <div class="content">
+        <p>Hello <strong th:text="${customerName != null ? customerName : 'Customer'}">Customer</strong>,</p>
+        <p>Thank you for your order! We have received it and are preparing it for shipment.</p>
+
+        <div class="order-badge">
+            Order #: <span th:text="${orderNumber}">ORD-12345</span>
+        </div>
+
+        <table class="order-table" th:if="${items != null and !items.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${items}">
+                    <td th:text="${item.productId}">Product</td>
+                    <td th:text="${item.quantity}">1</td>
+                    <td th:text="${item.unitPrice}">$10.00</td>
+                    <td th:text="${item.lineTotal}">$10.00</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right; padding-right: 16px;">Grand Total:</td>
+                    <td>
+                        <span th:text="${currencyCode != null ? currencyCode : '$'}">$</span>
+                        <span th:text="${grandTotal}">0.00</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${items == null or items.isEmpty()}">
+            <p><strong>Grand Total:</strong> <span th:text="${currencyCode != null ? currencyCode : '$'}">$</span><span th:text="${grandTotal}">0.00</span></p>
+        </div>
+
+        <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">
+            You can track your order status in your account dashboard.
+        </p>
+    </div>
+    <div class="footer">
+        <p>&copy; <span th:text="${year}">2026</span> AI E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>

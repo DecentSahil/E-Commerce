@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Processed</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .container {
+            max-width: 580px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            padding: 32px 24px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 36px 32px;
+        }
+        .amount-box {
+            background-color: #ecfdf5;
+            border: 2px dashed #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 24px 0;
+        }
+        .amount-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #047857;
+        }
+        .reason-box {
+            background-color: #f9fafb;
+            border-left: 4px solid #6b7280;
+            padding: 14px;
+            border-radius: 4px;
+            margin: 18px 0;
+            color: #374151;
+            font-size: 14px;
+        }
+        .timeline-notice {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 14px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #1e40af;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Refund Confirmation</h1>
+    </div>
+    <div class="content">
+        <p>Hello,</p>
+        <p>A refund has been successfully initiated for your order <strong>#<span th:text="${orderNumber}">ORD-12345</span></strong>.</p>
+
+        <div class="amount-box">
+            <div style="font-size: 13px; color: #065f46; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Refund Amount</div>
+            <div class="amount-value">
+                <span th:text="${currencyCode}">INR</span> <span th:text="${refundAmount}">0.00</span>
+            </div>
+        </div>
+
+        <div class="reason-box" th:if="${reason != null and !reason.isEmpty()}">
+            <strong>Reason:</strong>
+            <span th:text="${reason}">Refund processed upon return/cancellation</span>
+        </div>
+
+        <div class="timeline-notice">
+            <strong>Banking Timeline:</strong><br/>
+            The funds have been credited to your original payment method. Depending on your bank or card provider, please allow <strong>5 to 7 business days</strong> for the amount to reflect in your account statement.
+        </div>
+
+        <p style="color: #6b7280; font-size: 13px; margin-top: 24px;">
+            If you have any questions or have not received your refund within 7 business days, please contact our support team with your order reference.
+        </p>
+    </div>
+    <div class="footer">
+        <p>&copy; <span th:text="${year}">2026</span> AI E-Commerce Platform. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>
