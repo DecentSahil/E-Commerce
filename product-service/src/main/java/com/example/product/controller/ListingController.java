@@ -36,6 +36,20 @@ public class ListingController {
                 .body(response);
     }
 
+    @GetMapping
+    public ResponseEntity<List<ListingResponse>> getListings(
+            @RequestParam(required = false) UUID productId,
+            @RequestParam(required = false) UUID sellerId
+    ) {
+        if (productId != null) {
+            return ResponseEntity.ok(listingService.getListingsByProductId(productId));
+        }
+        if (sellerId != null) {
+            return ResponseEntity.ok(listingService.getListingsBySellerId(sellerId));
+        }
+        return ResponseEntity.ok(List.of());
+    }
+
     @GetMapping("/my")
     public ResponseEntity<List<ListingResponse>> getMyListings(
             @RequestHeader("X-User-Id") UUID sellerId
@@ -121,7 +135,8 @@ public class ListingController {
     }
 
     private void verifySellerOrAdminRole(String role) {
-        if (role != null && "USER".equalsIgnoreCase(role)) {
+        if (role == null || (!"SELLER".equalsIgnoreCase(role) && !"ROLE_SELLER".equalsIgnoreCase(role)
+                && !"ADMIN".equalsIgnoreCase(role) && !"ROLE_ADMIN".equalsIgnoreCase(role))) {
             throw new AccessDeniedException("Only SELLER or ADMIN users can create product listings");
         }
     }

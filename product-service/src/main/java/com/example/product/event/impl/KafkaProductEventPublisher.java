@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Map;
 import java.util.UUID;
@@ -94,6 +96,19 @@ public class KafkaProductEventPublisher implements ProductEventPublisher {
     }
 
     private void send(String topic, String key, Object message) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish(topic, key, message);
+                }
+            });
+        } else {
+            publish(topic, key, message);
+        }
+    }
+
+    private void publish(String topic, String key, Object message) {
         try {
             kafkaTemplate.send(topic, key, message);
             log.info("[KAFKA_PUBLISHED] topic={} key={} event={}", topic, key, message);

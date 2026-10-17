@@ -230,7 +230,7 @@ public class ListingServiceImpl implements ListingService {
             String currentUserRole
     ) {
 
-        if ("ADMIN".equalsIgnoreCase(currentUserRole)) {
+        if ("ADMIN".equalsIgnoreCase(currentUserRole) || "ROLE_ADMIN".equalsIgnoreCase(currentUserRole)) {
             return findListingById(id);
         }
 

@@ -50,6 +50,7 @@ public class ProductMapper {
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
                 .category(categoryMapper.toResponse(product.getCategory()))
                 .brand(brandMapper.toResponse(product.getBrand()))
                 .status(product.getStatus())

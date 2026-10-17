@@ -22,6 +22,9 @@ public class PatchProductRequest {
     private String name;
 
     private String description;
+    
+    @Size(max = 1000, message = "Image URL must not exceed 1000 characters")
+    private String imageUrl;
 
     private UUID categoryId;
 

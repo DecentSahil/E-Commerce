@@ -59,6 +59,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = Product.builder()
                 .name(request.getName().trim())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .category(category)
                 .brand(brand)
                 .status(
@@ -148,6 +149,7 @@ public class ProductServiceImpl implements ProductService {
 
         product.setName(request.getName().trim());
         product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
         product.setCategory(category);
         product.setBrand(brand);
         product.setStatus(request.getStatus());
@@ -191,6 +193,10 @@ public class ProductServiceImpl implements ProductService {
 
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
+        }
+
+        if (request.getImageUrl() != null) {
+            product.setImageUrl(request.getImageUrl());
         }
 
         if (request.getCategoryId() != null) {

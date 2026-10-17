@@ -25,6 +25,9 @@ public class UpdateProductRequest {
     private String name;
 
     private String description;
+    
+    @Size(max = 1000, message = "Image URL must not exceed 1000 characters")
+    private String imageUrl;
 
     @NotNull(message = "Category ID is required")
     private UUID categoryId;
