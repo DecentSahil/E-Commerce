@@ -25,6 +25,7 @@ public class SecurityConfig {
                 .authorizeExchange(ex -> ex
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/api/v1/auth/**").permitAll()
+                        .pathMatchers("/api/v1/orders/admin/**").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/listings/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()

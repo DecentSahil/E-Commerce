@@ -21,9 +21,6 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
-        // This must use the same decoding strategy as auth-service's JwtService.
-        // The configured secret is Base64-compatible; treating it as plain text
-        // produces a different key and rejects every token issued at login.
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secret);
