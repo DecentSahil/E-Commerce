@@ -1,10 +1,12 @@
 package com.example.wishlist.client;
 
+import com.example.wishlist.client.dto.ProductDto;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -31,7 +33,7 @@ public class ProductClientImpl implements ProductClient {
     }
 
     @Override
-    public Optional<com.example.wishlist.client.dto.ProductDto> getProduct(UUID productId) {
+    public Optional<ProductDto> getProduct(UUID productId) {
         if (productId == null) {
             return Optional.empty();
         }
