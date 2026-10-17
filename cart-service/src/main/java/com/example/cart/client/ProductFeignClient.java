@@ -1,6 +1,7 @@
 package com.example.cart.client;
 
 import com.example.cart.client.dto.ListingDto;
+import com.example.cart.client.dto.ProductDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,4 +13,7 @@ public interface ProductFeignClient {
 
     @GetMapping("/api/v1/listings/{listingId}")
     ListingDto getListingById(@PathVariable("listingId") UUID listingId);
+
+    @GetMapping("/api/v1/products/{productId}")
+    ProductDto getProductById(@PathVariable("productId") UUID productId);
 }

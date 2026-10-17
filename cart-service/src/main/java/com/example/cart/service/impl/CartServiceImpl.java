@@ -2,6 +2,7 @@ package com.example.cart.service.impl;
 
 import com.example.cart.client.ProductListingClient;
 import com.example.cart.client.dto.ListingDto;
+import com.example.cart.client.dto.ProductDto;
 import com.example.cart.dto.request.AddToCartRequest;
 import com.example.cart.dto.request.UpdateCartItemRequest;
 import com.example.cart.dto.response.CartResponse;
@@ -16,6 +17,7 @@ import com.example.cart.repository.CartItemRepository;
 import com.example.cart.repository.CartRepository;
 import com.example.cart.service.CartService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
@@ -39,7 +42,8 @@ public class CartServiceImpl implements CartService {
     public CartResponse getCart(UUID userId) {
         Cart cart = getOrCreateCart(userId);
         Map<UUID, ListingDto> listingDetails = fetchListingDetails(cart);
-        return cartMapper.toResponse(cart, listingDetails);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(cart);
+        return cartMapper.toResponse(cart, listingDetails, productDetails);
     }
 
     @Override
@@ -83,7 +87,8 @@ public class CartServiceImpl implements CartService {
         }
 
         Map<UUID, ListingDto> listingDetails = fetchListingDetails(cart);
-        return cartMapper.toResponse(cart, listingDetails);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(cart);
+        return cartMapper.toResponse(cart, listingDetails, productDetails);
     }
 
     @Override
@@ -93,6 +98,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
 
         CartItem item = cartItemRepository.findByIdAndCartId(itemId, cart.getId())
+                .or(() -> cartItemRepository.findByCartIdAndListingId(cart.getId(), itemId))
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with id: " + itemId));
 
         ListingDto listing = validateListing(item.getProductId(), item.getListingId());
@@ -108,7 +114,8 @@ public class CartServiceImpl implements CartService {
         eventPublisher.publishCartItemUpdated(userId, item.getProductId(), item.getListingId(), request.getQuantity());
 
         Map<UUID, ListingDto> listingDetails = fetchListingDetails(cart);
-        return cartMapper.toResponse(cart, listingDetails);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(cart);
+        return cartMapper.toResponse(cart, listingDetails, productDetails);
     }
 
     @Override
@@ -118,6 +125,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found for user: " + userId));
 
         CartItem item = cartItemRepository.findByIdAndCartId(itemId, cart.getId())
+                .or(() -> cartItemRepository.findByCartIdAndListingId(cart.getId(), itemId))
                 .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with id: " + itemId));
 
         cart.getItems().remove(item);
@@ -126,7 +134,8 @@ public class CartServiceImpl implements CartService {
         eventPublisher.publishCartItemRemoved(userId, item.getProductId(), item.getListingId());
 
         Map<UUID, ListingDto> listingDetails = fetchListingDetails(cart);
-        return cartMapper.toResponse(cart, listingDetails);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(cart);
+        return cartMapper.toResponse(cart, listingDetails, productDetails);
     }
 
     @Override
@@ -167,8 +176,29 @@ public class CartServiceImpl implements CartService {
         Map<UUID, ListingDto> map = new HashMap<>();
         if (cart.getItems() != null) {
             for (CartItem item : cart.getItems()) {
-                listingClient.getListing(item.getProductId(), item.getListingId())
-                        .ifPresent(dto -> map.put(item.getListingId(), dto));
+                try {
+                    listingClient.getListing(item.getProductId(), item.getListingId())
+                            .ifPresent(dto -> map.put(item.getListingId(), dto));
+                } catch (Exception ex) {
+                    log.warn("Could not fetch listing details for listing {}: {}", item.getListingId(), ex.getMessage());
+                }
+            }
+        }
+        return map;
+    }
+
+    private Map<UUID, ProductDto> fetchProductDetails(Cart cart) {
+        Map<UUID, ProductDto> map = new HashMap<>();
+        if (cart.getItems() != null) {
+            for (CartItem item : cart.getItems()) {
+                if (item.getProductId() != null && !map.containsKey(item.getProductId())) {
+                    try {
+                        listingClient.getProduct(item.getProductId())
+                                .ifPresent(dto -> map.put(item.getProductId(), dto));
+                    } catch (Exception ex) {
+                        log.warn("Could not fetch product details for product {}: {}", item.getProductId(), ex.getMessage());
+                    }
+                }
             }
         }
         return map;

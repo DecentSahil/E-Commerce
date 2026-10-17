@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Map;
 import java.util.UUID;
@@ -52,6 +54,19 @@ public class KafkaCartEventPublisher implements CartEventPublisher {
     }
 
     private void send(String key, Object event) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publish(key, event);
+                }
+            });
+        } else {
+            publish(key, event);
+        }
+    }
+
+    private void publish(String key, Object event) {
         try {
             kafkaTemplate.send(CART_TOPIC, key, event);
             log.info("[KAFKA_PUBLISHED] topic={} key={} event={}", CART_TOPIC, key, event);

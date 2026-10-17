@@ -1,6 +1,7 @@
 package com.example.cart.mapper;
 
 import com.example.cart.client.dto.ListingDto;
+import com.example.cart.client.dto.ProductDto;
 import com.example.cart.dto.response.CartItemResponse;
 import com.example.cart.dto.response.CartResponse;
 import com.example.cart.entity.Cart;
@@ -17,13 +18,21 @@ import java.util.UUID;
 public class CartMapper {
 
     public CartResponse toResponse(Cart cart, Map<UUID, ListingDto> listingDetails) {
+        return toResponse(cart, listingDetails, Collections.emptyMap());
+    }
+
+    public CartResponse toResponse(Cart cart, Map<UUID, ListingDto> listingDetails, Map<UUID, ProductDto> productDetails) {
         if (cart == null) {
             return null;
         }
 
         List<CartItemResponse> itemResponses = cart.getItems() != null
                 ? cart.getItems().stream()
-                .map(item -> toItemResponse(item, listingDetails.get(item.getListingId())))
+                .map(item -> toItemResponse(
+                        item,
+                        listingDetails != null ? listingDetails.get(item.getListingId()) : null,
+                        productDetails != null ? productDetails.get(item.getProductId()) : null
+                ))
                 .toList()
                 : Collections.emptyList();
 
@@ -47,6 +56,10 @@ public class CartMapper {
     }
 
     public CartItemResponse toItemResponse(CartItem item, ListingDto listing) {
+        return toItemResponse(item, listing, null);
+    }
+
+    public CartItemResponse toItemResponse(CartItem item, ListingDto listing, ProductDto product) {
         if (item == null) {
             return null;
         }
@@ -58,12 +71,14 @@ public class CartMapper {
                 ? listing.getCurrency()
                 : "INR";
         UUID sellerId = (listing != null) ? listing.getSellerId() : null;
+        String productName = (product != null) ? product.getName() : null;
 
         BigDecimal subtotal = price.multiply(BigDecimal.valueOf(item.getQuantity()));
 
         return CartItemResponse.builder()
                 .id(item.getId())
                 .productId(item.getProductId())
+                .productName(productName)
                 .listingId(item.getListingId())
                 .sellerId(sellerId)
                 .quantity(item.getQuantity())

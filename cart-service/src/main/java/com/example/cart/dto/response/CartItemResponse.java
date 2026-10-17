@@ -19,6 +19,7 @@ public class CartItemResponse {
 
     private UUID id;
     private UUID productId;
+    private String productName;
     private UUID listingId;
     private UUID sellerId;
     private Integer quantity;
