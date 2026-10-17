@@ -49,4 +49,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id AND o.authUserId = :authUserId")
     Optional<Order> findByIdAndAuthUserIdWithItems(@Param("id") UUID id,
                                                    @Param("authUserId") UUID authUserId);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN o.items i WHERE i.sellerId = :sellerId ORDER BY o.createdAt DESC")
+    Page<Order> findOrdersBySellerId(@Param("sellerId") UUID sellerId, Pageable pageable);
+
 }

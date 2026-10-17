@@ -8,11 +8,13 @@ import com.example.order.dto.request.CheckoutCartRequest;
 import com.example.order.dto.request.CreateOrderRequest;
 import com.example.order.dto.request.OrderItemRequest;
 import com.example.order.dto.request.UpdateOrderStatusRequest;
+import com.example.order.dto.response.OrderItemResponse;
 import com.example.order.dto.response.OrderResponse;
 import com.example.order.dto.response.OrderStatusHistoryResponse;
 import com.example.order.dto.response.OrderSummaryResponse;
 import com.example.order.entity.*;
 import com.example.order.event.OrderEventPublisher;
+import com.example.order.exception.AccessDeniedException;
 import com.example.order.exception.DuplicateIdempotencyKeyException;
 import com.example.order.exception.InvalidOrderStateException;
 import com.example.order.exception.OrderNotFoundException;
@@ -92,14 +94,10 @@ public class OrderServiceImpl implements OrderService {
                 .reason("Order placed by customer")
                 .build();
         order.addStatusHistory(initialHistory);
-
         Order saved = orderRepository.save(order);
-
         log.info("Order created: orderId={} orderNumber={} userId={} grandTotal={}",
                 saved.getId(), saved.getOrderNumber(), authUserId, saved.getGrandTotal());
-
         eventPublisher.publishOrderCreated(saved);
-
         return orderMapper.toOrderResponse(saved);
     }
 
@@ -523,7 +521,6 @@ public class OrderServiceImpl implements OrderService {
 
         Order saved = orderRepository.save(order);
 
-        // Synchronously restore stock for all items
         if (saved.getItems() != null) {
             for (OrderItem item : saved.getItems()) {
                 if (item.getListingId() != null && item.getQuantity() != null && item.getQuantity() > 0) {
@@ -565,18 +562,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
 
         OrderStatus currentStatus = order.getStatus();
-        OrderStatus newStatus     = request.getStatus();
-
-        if (TERMINAL_STATES.contains(currentStatus) && newStatus != OrderStatus.REFUNDED) {
-            throw new InvalidOrderStateException(
-                    "Cannot change order status from terminal state '" + currentStatus
-                    + "' to '" + newStatus + "'.");
-        }
-
-        if (currentStatus == newStatus) {
-            throw new InvalidOrderStateException(
-                    "Order is already in status: " + currentStatus);
-        }
+        OrderStatus newStatus = getOrderStatus(request, currentStatus);
 
         order.setStatus(newStatus);
         applyTimestampForStatus(order, newStatus);
@@ -591,19 +577,40 @@ public class OrderServiceImpl implements OrderService {
 
         Order saved = orderRepository.save(order);
 
-        eventPublisher.publishOrderStatusChanged(saved.getId(), saved.getOrderNumber(),
-                currentStatus, newStatus);
-
         if (newStatus == OrderStatus.DELIVERED) {
             eventPublisher.publishOrderDelivered(saved.getId(), saved.getOrderNumber(), saved.getAuthUserId());
         } else if (newStatus == OrderStatus.CANCELLED) {
             eventPublisher.publishOrderCancelled(saved.getId(), saved.getOrderNumber(),
                     saved.getAuthUserId(), request.getReason());
+        } else if (newStatus == OrderStatus.REFUNDED) {
+            eventPublisher.publishOrderRefunded(saved.getId(), saved.getOrderNumber(), saved.getAuthUserId(),
+                    saved.getGrandTotal(), saved.getCurrencyCode(), request.getReason());
+        } else if (newStatus == OrderStatus.CONFIRMED) {
+            eventPublisher.publishOrderConfirmed(saved);
+        } else {
+            eventPublisher.publishOrderStatusChanged(saved.getId(), saved.getOrderNumber(),
+                    saved.getAuthUserId(), currentStatus, newStatus);
         }
 
         log.info("Admin updated order status: orderId={} from={} to={} adminId={}",
                 orderId, currentStatus, newStatus, adminId);
         return orderMapper.toOrderResponse(saved);
+    }
+
+    private static OrderStatus getOrderStatus(UpdateOrderStatusRequest request, OrderStatus currentStatus) {
+        OrderStatus newStatus = request.getStatus();
+
+        if (TERMINAL_STATES.contains(currentStatus) && newStatus != OrderStatus.REFUNDED) {
+            throw new InvalidOrderStateException(
+                    "Cannot change order status from terminal state '" + currentStatus
+                    + "' to '" + newStatus + "'.");
+        }
+
+        if (currentStatus == newStatus) {
+            throw new InvalidOrderStateException(
+                    "Order is already in status: " + currentStatus);
+        }
+        return newStatus;
     }
 
     @Override
@@ -692,12 +699,7 @@ public class OrderServiceImpl implements OrderService {
                 saved.getId()
         );
 
-        eventPublisher.publishOrderStatusChanged(
-                saved.getId(),
-                saved.getOrderNumber(),
-                previousStatus,
-                OrderStatus.CONFIRMED
-        );
+        eventPublisher.publishOrderConfirmed(saved);
     }
 
     @Override
@@ -770,4 +772,109 @@ public class OrderServiceImpl implements OrderService {
             default         -> {  }
         }
     }
+
+    @Override
+    public Page<OrderResponse> getOrdersForSeller(UUID sellerId, Pageable pageable) {
+        return orderRepository.findOrdersBySellerId(sellerId, pageable)
+                .map(order -> {
+                    OrderResponse response = orderMapper.toOrderResponse(order);
+                    List<OrderItemResponse> sellerItems = response.getItems().stream()
+                            .filter(item -> sellerId.equals(item.getSellerId()))
+                            .toList();
+                    response.setItems(sellerItems);
+
+                    BigDecimal sellerTotal = sellerItems.stream()
+                            .map(OrderItemResponse::getLineTotal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    response.setGrandTotal(sellerTotal);
+                    return response;
+                });
+    }
+
+    @Transactional
+    @Override
+    public OrderResponse updateOrderStatusForSeller(UUID orderId, UUID sellerId, String role, UpdateOrderStatusRequest request) {
+        Order order = orderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role);
+
+        if (!isAdmin) {
+            boolean ownsItem = order.getItems().stream()
+                    .anyMatch(item -> sellerId.equals(item.getSellerId()));
+
+            if (!ownsItem) {
+                throw new AccessDeniedException("Access denied: You do not have permission to modify this order.");
+            }
+        }
+
+        OrderStatus currentStatus = order.getStatus();
+        OrderStatus newStatus = getOrderStatus(request, currentStatus);
+
+        order.setStatus(newStatus);
+        applyTimestampForStatus(order, newStatus);
+
+        OrderStatusHistory history = OrderStatusHistory.builder()
+                .fromStatus(currentStatus)
+                .toStatus(newStatus)
+                .changedBy(sellerId)
+                .reason(request.getReason() != null ? request.getReason() : "Status updated by seller")
+                .build();
+        order.addStatusHistory(history);
+
+        Order saved = orderRepository.save(order);
+
+        // 1. If cancelled, restore stock for items
+        if (newStatus == OrderStatus.CANCELLED && saved.getItems() != null) {
+            for (OrderItem item : saved.getItems()) {
+                if (isAdmin || sellerId.equals(item.getSellerId())) {
+                    if (item.getListingId() != null && item.getQuantity() != null && item.getQuantity() > 0) {
+                        try {
+                            productClient.restoreStock(item.getListingId(), item.getQuantity());
+                            log.info("Restored stock for listingId={} qty={} upon seller cancellation", item.getListingId(), item.getQuantity());
+                        } catch (Exception ex) {
+                            log.error("Failed to restore stock for listing {}: {}", item.getListingId(), ex.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Publish Kafka events based on status
+        if (newStatus == OrderStatus.DELIVERED) {
+            eventPublisher.publishOrderDelivered(saved.getId(), saved.getOrderNumber(), saved.getAuthUserId());
+        } else if (newStatus == OrderStatus.CANCELLED) {
+            eventPublisher.publishOrderCancelled(
+                    saved.getId(),
+                    saved.getOrderNumber(),
+                    saved.getAuthUserId(),
+                    request.getReason() != null ? request.getReason() : "Cancelled by seller"
+            );
+        } else if (newStatus == OrderStatus.REFUNDED) {
+            eventPublisher.publishOrderRefunded(
+                    saved.getId(),
+                    saved.getOrderNumber(),
+                    saved.getAuthUserId(),
+                    saved.getGrandTotal(),
+                    saved.getCurrencyCode(),
+                    request.getReason() != null ? request.getReason() : "Refunded by seller/admin"
+            );
+        } else if (newStatus == OrderStatus.CONFIRMED) {
+            eventPublisher.publishOrderConfirmed(saved);
+        } else {
+            eventPublisher.publishOrderStatusChanged(
+                    saved.getId(),
+                    saved.getOrderNumber(),
+                    saved.getAuthUserId(),
+                    currentStatus,
+                    newStatus
+            );
+        }
+
+        log.info("Order status updated: orderId={} from={} to={} actorId={}",
+                orderId, currentStatus, newStatus, sellerId);
+
+        return orderMapper.toOrderResponse(saved);
+    }
+
 }

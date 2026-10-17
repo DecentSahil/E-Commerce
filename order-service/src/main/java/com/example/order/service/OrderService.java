@@ -9,6 +9,7 @@ import com.example.order.dto.response.OrderSummaryResponse;
 import com.example.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -54,4 +55,9 @@ public interface OrderService {
     List<OrderStatusHistoryResponse> getOrderStatusHistory(UUID orderId,
                                                            UUID authUserId,
                                                            boolean isAdmin);
+
+    Page<OrderResponse> getOrdersForSeller(UUID sellerId, Pageable pageable);
+
+    @Transactional
+    OrderResponse updateOrderStatusForSeller(UUID orderId, UUID sellerId, String role, UpdateOrderStatusRequest request);
 }

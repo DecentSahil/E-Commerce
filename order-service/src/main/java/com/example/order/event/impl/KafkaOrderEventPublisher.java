@@ -27,12 +27,25 @@ public class KafkaOrderEventPublisher implements OrderEventPublisher {
 
     @Override
     public void publishOrderCreated(Order order) {
+        Map<String, Object> payload = buildOrderPayload(order);
+        send(order.getId().toString(), EventEnvelope.of("ORDER_CREATED", payload));
+    }
+
+    @Override
+    public void publishOrderConfirmed(Order order) {
+        Map<String, Object> payload = buildOrderPayload(order);
+        send(order.getId().toString(), EventEnvelope.of("ORDER_CONFIRMED", payload));
+    }
+
+    private Map<String, Object> buildOrderPayload(Order order) {
         List<Map<String, Object>> items = order.getItems() == null ? List.of() :
                 order.getItems().stream().map(item -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("productId", item.getProductId());
                     map.put("listingId", item.getListingId());
                     map.put("sellerId", item.getSellerId());
+                    map.put("productName", item.getProductName());
+                    map.put("productSku", item.getProductSku());
                     map.put("quantity", item.getQuantity());
                     map.put("unitPrice", item.getUnitPrice());
                     map.put("lineTotal", item.getLineTotal());
@@ -44,23 +57,47 @@ public class KafkaOrderEventPublisher implements OrderEventPublisher {
         payload.put("orderNumber", order.getOrderNumber());
         payload.put("authUserId", order.getAuthUserId());
         payload.put("grandTotal", order.getGrandTotal());
+        payload.put("subtotal", order.getSubtotal());
+        payload.put("shippingCost", order.getShippingCost());
+        payload.put("taxTotal", order.getTaxTotal());
         payload.put("currencyCode", order.getCurrencyCode());
         payload.put("status", order.getStatus() != null ? order.getStatus().name() : "");
+        payload.put("shipFullName", order.getShipFullName());
+        payload.put("shipPhone", order.getShipPhone());
+        payload.put("shipCity", order.getShipCity());
         payload.put("items", items);
-
-        send(order.getId().toString(), EventEnvelope.of("ORDER_CREATED", payload));
+        return payload;
     }
 
     @Override
-    public void publishOrderStatusChanged(UUID orderId, String orderNumber,
+    public void publishOrderStatusChanged(UUID orderId, String orderNumber, UUID authUserId,
                                            OrderStatus fromStatus, OrderStatus toStatus) {
-        Map<String, Object> payload = Map.of(
-                "orderId", orderId,
-                "orderNumber", orderNumber != null ? orderNumber : "",
-                "fromStatus", fromStatus != null ? fromStatus.name() : "",
-                "toStatus", toStatus != null ? toStatus.name() : ""
-        );
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("orderId", orderId);
+        payload.put("orderNumber", orderNumber != null ? orderNumber : "");
+        if (authUserId != null) {
+            payload.put("authUserId", authUserId);
+        }
+        payload.put("fromStatus", fromStatus != null ? fromStatus.name() : "");
+        payload.put("toStatus", toStatus != null ? toStatus.name() : "");
+
         send(orderId.toString(), EventEnvelope.of("ORDER_STATUS_CHANGED", payload));
+    }
+
+    @Override
+    public void publishOrderRefunded(UUID orderId, String orderNumber, UUID authUserId,
+                                     java.math.BigDecimal refundAmount, String currencyCode, String reason) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("orderId", orderId);
+        payload.put("orderNumber", orderNumber != null ? orderNumber : "");
+        if (authUserId != null) {
+            payload.put("authUserId", authUserId);
+        }
+        payload.put("refundAmount", refundAmount != null ? refundAmount : java.math.BigDecimal.ZERO);
+        payload.put("currencyCode", currencyCode != null ? currencyCode : "INR");
+        payload.put("reason", reason != null ? reason : "Refund processed");
+
+        send(orderId.toString(), EventEnvelope.of("ORDER_REFUNDED", payload));
     }
 
     @Override

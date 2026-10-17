@@ -15,9 +15,6 @@ public class LoggingOrderEventPublisher implements OrderEventPublisher {
 
     @Override
     public void publishOrderCreated(Order order) {
-        // [TEMPORARY] Replace with RabbitMQ producer publishing to exchange: order.events
-        // Routing key: order.created
-        // Consumers: notification-service (confirmation email), analytics-service
         log.info("[EVENT][order.created] orderId={} orderNumber={} userId={} grandTotal={} currency={}",
                 order.getId(),
                 order.getOrderNumber(),
@@ -27,30 +24,38 @@ public class LoggingOrderEventPublisher implements OrderEventPublisher {
     }
 
     @Override
-    public void publishOrderStatusChanged(UUID orderId, String orderNumber,
-                                          OrderStatus fromStatus, OrderStatus toStatus) {
-        // [TEMPORARY] Replace with RabbitMQ producer publishing to exchange: order.events
-        // Routing key: order.status.changed
-        // Consumers: notification-service, analytics-service
-        log.info("[EVENT][order.status.changed] orderId={} orderNumber={} from={} to={}",
-                orderId, orderNumber, fromStatus, toStatus);
+    public void publishOrderConfirmed(Order order) {
+        log.info("[EVENT][order.confirmed] orderId={} orderNumber={} userId={} grandTotal={} currency={}",
+                order.getId(),
+                order.getOrderNumber(),
+                order.getAuthUserId(),
+                order.getGrandTotal(),
+                order.getCurrencyCode());
+    }
+
+    @Override
+    public void publishOrderStatusChanged(UUID orderId, String orderNumber, UUID authUserId,
+                                           OrderStatus fromStatus, OrderStatus toStatus) {
+        log.info("[EVENT][order.status.changed] orderId={} orderNumber={} userId={} from={} to={}",
+                orderId, orderNumber, authUserId, fromStatus, toStatus);
+    }
+
+    @Override
+    public void publishOrderRefunded(UUID orderId, String orderNumber, UUID authUserId,
+                                     java.math.BigDecimal refundAmount, String currencyCode, String reason) {
+        log.info("[EVENT][order.refunded] orderId={} orderNumber={} userId={} refundAmount={} currency={} reason={}",
+                orderId, orderNumber, authUserId, refundAmount, currencyCode, reason);
     }
 
     @Override
     public void publishOrderCancelled(UUID orderId, String orderNumber,
                                       UUID authUserId, String reason) {
-        // [TEMPORARY] Replace with RabbitMQ producer publishing to exchange: order.events
-        // Routing key: order.cancelled
-        // Consumers: notification-service (cancellation email), analytics-service
         log.info("[EVENT][order.cancelled] orderId={} orderNumber={} userId={} reason={}",
                 orderId, orderNumber, authUserId, reason);
     }
 
     @Override
     public void publishOrderDelivered(UUID orderId, String orderNumber, UUID authUserId) {
-        // [TEMPORARY] Replace with RabbitMQ producer publishing to exchange: order.events
-        // Routing key: order.delivered
-        // Consumers: recommendation-service (purchase signal), analytics-service
         log.info("[EVENT][order.delivered] orderId={} orderNumber={} userId={}",
                 orderId, orderNumber, authUserId);
     }

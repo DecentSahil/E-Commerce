@@ -152,18 +152,47 @@ public class OrderController {
         );
     }
 
+//    @PatchMapping("/{id}/status")
+//    public ResponseEntity<OrderResponse> updateOrderStatus(
+//            @PathVariable UUID id,
+//            @Valid @RequestBody UpdateOrderStatusRequest request,
+//            @RequestHeader(USER_ID_HEADER) UUID adminId) {
+//
+//        return ResponseEntity.ok(
+//                orderService.updateOrderStatusAdmin(
+//                        id,
+//                        adminId,
+//                        request
+//                )
+//        );
+//    }
+
+    @GetMapping("/seller")
+    public ResponseEntity<Page<OrderResponse>> getMySellerOrders(
+            @RequestHeader("X-User-Id") UUID sellerId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        // Role check: Only genuine sellers or admins allowed
+        if (role == null || (!role.contains("SELLER") && !role.contains("ADMIN"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(orderService.getOrdersForSeller(sellerId, pageable));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateOrderStatusRequest request,
-            @RequestHeader(USER_ID_HEADER) UUID adminId) {
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role) {
 
         return ResponseEntity.ok(
-                orderService.updateOrderStatusAdmin(
-                        id,
-                        adminId,
-                        request
-                )
+                orderService.updateOrderStatusForSeller(id, userId, role, request)
         );
     }
+
 }
