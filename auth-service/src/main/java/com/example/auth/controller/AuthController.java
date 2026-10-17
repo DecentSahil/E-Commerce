@@ -14,8 +14,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -23,7 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/send-otp")
+    @PostMapping({"/send-otp", "/otp/send"})
     public ResponseEntity<String> sendOtp(
             @Valid @RequestBody SendOtpRequest request) {
 
@@ -35,6 +33,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/seller/register")
+    public ResponseEntity<MessageResponse> registerSeller(@Valid @RequestBody RegisterRequest request) {
+        MessageResponse response = authService.registerSeller(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -68,6 +72,33 @@ public class AuthController {
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         UserResponse userResponse = authService.getCurrentUser(userDetails.getUsername());
         return ResponseEntity.ok(userResponse);
+    }
+
+    @PatchMapping("/admin/users/{userId}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> updateUserRole(
+            @PathVariable java.util.UUID userId,
+            @RequestParam com.example.auth.entity.Role role) {
+        UserResponse response = authService.updateUserRole(userId, role);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/admin/sellers/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.List<UserResponse>> getPendingSellers() {
+        return ResponseEntity.ok(authService.getPendingSellers());
+    }
+
+    @PatchMapping("/admin/sellers/{userId}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> approveSeller(@PathVariable java.util.UUID userId) {
+        return ResponseEntity.ok(authService.approveSeller(userId));
+    }
+
+    @PatchMapping("/admin/sellers/{userId}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> rejectSeller(@PathVariable java.util.UUID userId) {
+        return ResponseEntity.ok(authService.rejectSeller(userId));
     }
 
 }

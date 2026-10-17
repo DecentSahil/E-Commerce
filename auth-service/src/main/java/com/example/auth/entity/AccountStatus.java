@@ -2,6 +2,7 @@ package com.example.auth.entity;
 
 public enum AccountStatus {
     ACTIVE,
+    PENDING_APPROVAL,
     LOCKED,
     DISABLED;
 

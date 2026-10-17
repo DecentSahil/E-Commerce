@@ -28,11 +28,11 @@ public class OtpAuthenticationToken
 
     @Override
     public Object getCredentials() {
-        return principal;
+        return credentials;
     }
 
     @Override
     public Object getPrincipal() {
-        return credentials;
+        return principal;
     }
 }

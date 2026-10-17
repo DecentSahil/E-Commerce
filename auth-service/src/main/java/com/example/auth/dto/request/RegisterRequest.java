@@ -28,6 +28,5 @@ public class RegisterRequest {
             regexp = "[A-Za-z0-9]{6}",
             message = "OTP must be exactly 6 alphanumeric characters"
     )
-    private String Otp;
-
+    private String otp;
 }

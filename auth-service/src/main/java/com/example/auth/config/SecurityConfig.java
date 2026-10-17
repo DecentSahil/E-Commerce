@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import org.springframework.security.authentication.ProviderManager;
 
 @Configuration
 @EnableWebSecurity
@@ -48,10 +49,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/register",
+                                "/api/v1/auth/seller/register",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
                                 "/error",
-                                "/api/v1/auth/send-otp"
+                                "/api/v1/auth/send-otp",
+                                "/api/v1/auth/otp/send",
+                                "/api/v1/auth/otp/login"
+
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
@@ -72,9 +77,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(
+            AuthenticationProvider authenticationProvider,
+            OtpAuthenticationProvider otpAuthenticationProvider) {
+        return new ProviderManager(List.of(authenticationProvider, otpAuthenticationProvider));
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
