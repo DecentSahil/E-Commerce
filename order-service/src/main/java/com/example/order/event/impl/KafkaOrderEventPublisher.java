@@ -122,6 +122,21 @@ public class KafkaOrderEventPublisher implements OrderEventPublisher {
     }
 
     private void send(String key, Object event) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            doSend(key, event);
+                        }
+                    }
+            );
+        } else {
+            doSend(key, event);
+        }
+    }
+
+    private void doSend(String key, Object event) {
         try {
             kafkaTemplate.send(ORDER_TOPIC, key, event);
             log.info("[KAFKA_PUBLISHED] topic={} key={} event={}", ORDER_TOPIC, key, event);

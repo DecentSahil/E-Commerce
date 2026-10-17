@@ -178,12 +178,37 @@ public class OrderServiceImpl implements OrderService {
                 UUID sellerId = listing != null && listing.getSellerId() != null ? listing.getSellerId() : cartItem.getSellerId();
                 UUID listingId = listing != null ? listing.getId() : cartItem.getListingId();
 
+                String productName = cartItem.getProductName();
+                String productImageUrl = cartItem.getProductImageUrl();
+
+                if (!StringUtils.hasText(productName) || !StringUtils.hasText(productImageUrl)) {
+                    try {
+                        Optional<ProductDto> prodOpt = productClient.getProduct(cartItem.getProductId());
+                        if (prodOpt.isPresent()) {
+                            ProductDto prod = prodOpt.get();
+                            if (!StringUtils.hasText(productName) && StringUtils.hasText(prod.getName())) {
+                                productName = prod.getName();
+                            }
+                            if (!StringUtils.hasText(productImageUrl) && StringUtils.hasText(prod.getImageUrl())) {
+                                productImageUrl = prod.getImageUrl();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not enrich product info for productId: {}", cartItem.getProductId());
+                    }
+                }
+
+                if (!StringUtils.hasText(productName)) {
+                    productName = "Product " + cartItem.getProductId();
+                }
+
                 OrderItem orderItem = OrderItem.builder()
                         .productId(cartItem.getProductId())
                         .listingId(listingId)
                         .sellerId(sellerId)
                         .productSku("SKU-" + cartItem.getProductId().toString().substring(0, 8))
-                        .productName("Product " + cartItem.getProductId())
+                        .productName(productName)
+                        .productImageUrl(productImageUrl)
                         .quantity(cartItem.getQuantity())
                         .unitPrice(unitPrice)
                         .discountAmount(BigDecimal.ZERO)
@@ -437,7 +462,7 @@ public class OrderServiceImpl implements OrderService {
 
                     .productName(product.getName())
 
-                    .productImageUrl(null)
+                    .productImageUrl(product.getImageUrl())
 
                     .quantity(itemRequest.getQuantity())
 
@@ -483,10 +508,27 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderForUser(UUID orderId, UUID authUserId) {
-        return orderRepository.findByIdAndAuthUserIdWithItems(orderId, authUserId)
-                .map(orderMapper::toOrderResponse)
-                .orElseThrow(() -> new OrderNotFoundException(
-                        "Order not found: " + orderId));
+        return getOrderForUser(orderId, authUserId, null);
+    }
+
+    @Override
+    public OrderResponse getOrderForUser(UUID orderId, UUID authUserId, String role) {
+        boolean isAdmin = role != null && (role.contains("ADMIN") || "ADMIN".equalsIgnoreCase(role));
+        if (isAdmin) {
+            return getOrderByIdAdmin(orderId);
+        }
+
+        Order order = orderRepository.findByIdWithItems(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+
+        boolean isBuyer = authUserId != null && authUserId.equals(order.getAuthUserId());
+        boolean isSeller = authUserId != null && order.getItems().stream().anyMatch(item -> authUserId.equals(item.getSellerId()));
+
+        if (!isBuyer && !isSeller) {
+            throw new OrderNotFoundException("Order not found: " + orderId);
+        }
+
+        return orderMapper.toOrderResponse(order);
     }
 
     @Override
@@ -498,7 +540,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse cancelOrder(UUID orderId, UUID authUserId, String reason) {
-        Order order = orderRepository.findByIdAndAuthUserId(orderId, authUserId)
+        Order order = orderRepository.findByIdAndAuthUserIdWithItems(orderId, authUserId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
 
         if (!CUSTOMER_CANCELLABLE_STATES.contains(order.getStatus())) {
@@ -750,8 +792,13 @@ public class OrderServiceImpl implements OrderService {
                                                                   boolean isAdmin) {
 
         if (!isAdmin) {
-            orderRepository.findByIdAndAuthUserId(orderId, authUserId)
+            Order order = orderRepository.findByIdWithItems(orderId)
                     .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+            boolean isBuyer = authUserId != null && authUserId.equals(order.getAuthUserId());
+            boolean isSeller = authUserId != null && order.getItems().stream().anyMatch(item -> authUserId.equals(item.getSellerId()));
+            if (!isBuyer && !isSeller) {
+                throw new OrderNotFoundException("Order not found: " + orderId);
+            }
         } else {
             orderRepository.findById(orderId)
                     .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));

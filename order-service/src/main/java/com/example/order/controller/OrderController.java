@@ -92,10 +92,11 @@ public class OrderController {
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getMyOrder(
             @PathVariable UUID id,
-            @RequestHeader(USER_ID_HEADER) UUID authUserId) {
+            @RequestHeader(USER_ID_HEADER) UUID authUserId,
+            @RequestHeader(value = USER_ROLE_HEADER, required = false) String role) {
 
         return ResponseEntity.ok(
-                orderService.getOrderForUser(id, authUserId)
+                orderService.getOrderForUser(id, authUserId, role)
         );
     }
 
@@ -112,11 +113,11 @@ public class OrderController {
 
     @GetMapping("/{id}/history")
     public ResponseEntity<List<OrderStatusHistoryResponse>> getOrderHistory(
-            @RequestHeader(USER_ROLE_HEADER) String role,
             @PathVariable UUID id,
-            @RequestHeader(USER_ID_HEADER) UUID authUserId) {
+            @RequestHeader(USER_ID_HEADER) UUID authUserId,
+            @RequestHeader(value = USER_ROLE_HEADER, required = false) String role) {
 
-        boolean isAdmin = "ADMIN".equals(role);
+        boolean isAdmin = role != null && (role.contains("ADMIN") || "ADMIN".equalsIgnoreCase(role));
 
         return ResponseEntity.ok(
                 orderService.getOrderStatusHistory(

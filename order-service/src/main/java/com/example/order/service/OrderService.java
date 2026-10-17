@@ -26,6 +26,7 @@ public interface OrderService {
 
     OrderResponse getOrderForUser(UUID orderId, UUID authUserId);
 
+    OrderResponse getOrderForUser(UUID orderId, UUID authUserId, String role);
 
     Page<OrderSummaryResponse> getOrdersForUser(UUID authUserId, Pageable pageable);
 
