@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.product.service.ImageUploadService;
 import java.util.UUID;
 
 @RestController
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class ProductController {
 
     private final ProductService productService;
+    private final ImageUploadService imageUploadService;
 
     @GetMapping
     public ResponseEntity<PageResponse<ProductResponse>> getProducts(
@@ -94,6 +96,33 @@ public class ProductController {
         verifyAdminRole(userRole);
         productService.deleteProduct(productId);
         return ResponseEntity.ok(new MessageResponse("Product deleted successfully"));
+    }
+
+    @PostMapping(value = "/upload-image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<java.util.Map<String, String>> uploadProductImage(
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file
+    ) {
+        verifyAdminRole(userRole);
+        String imageUrl = imageUploadService.uploadImage(file);
+        return ResponseEntity.ok(java.util.Map.of(
+                "imageUrl", imageUrl,
+                "filename", file.getOriginalFilename() != null ? file.getOriginalFilename() : "image.jpg"
+        ));
+    }
+
+    @PostMapping(value = "/{productId}/image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductResponse> uploadImageForProduct(
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @PathVariable("productId") UUID productId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file
+    ) {
+        verifyAdminRole(userRole);
+        String imageUrl = imageUploadService.uploadImage(file);
+        PatchProductRequest patch = new PatchProductRequest();
+        patch.setImageUrl(imageUrl);
+        ProductResponse response = productService.patchProduct(productId, patch);
+        return ResponseEntity.ok(response);
     }
 
     private void verifyAdminRole(String role) {
