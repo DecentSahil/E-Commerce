@@ -220,7 +220,6 @@ public class OrderServiceImpl implements OrderService {
                 subtotal = subtotal.add(lineTotal);
             }
         } catch (Exception ex) {
-            // Compensate already deducted stock
             for (OrderItem item : deductedItems) {
                 if (item.getListingId() != null && item.getQuantity() != null) {
                     try {
@@ -871,7 +870,6 @@ public class OrderServiceImpl implements OrderService {
 
         Order saved = orderRepository.save(order);
 
-        // 1. If cancelled, restore stock for items
         if (newStatus == OrderStatus.CANCELLED && saved.getItems() != null) {
             for (OrderItem item : saved.getItems()) {
                 if (isAdmin || sellerId.equals(item.getSellerId())) {
@@ -887,7 +885,6 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // 2. Publish Kafka events based on status
         if (newStatus == OrderStatus.DELIVERED) {
             eventPublisher.publishOrderDelivered(saved.getId(), saved.getOrderNumber(), saved.getAuthUserId());
         } else if (newStatus == OrderStatus.CANCELLED) {
