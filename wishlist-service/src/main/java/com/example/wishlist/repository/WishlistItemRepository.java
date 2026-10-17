@@ -15,4 +15,6 @@ public interface WishlistItemRepository extends JpaRepository<WishlistItem, UUID
     Optional<WishlistItem> findByWishlistIdAndProductId(UUID wishlistId, UUID productId);
 
     void deleteByWishlistIdAndProductId(UUID wishlistId, UUID productId);
+
+    void deleteAllByWishlistId(UUID wishlistId);
 }

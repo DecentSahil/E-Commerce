@@ -44,4 +44,19 @@ public class WishlistController {
         wishlistService.removeItemFromWishlist(userId, productId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/items/{productId}/check")
+    public ResponseEntity<java.util.Map<String, Boolean>> isItemWishlisted(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PathVariable("productId") UUID productId) {
+        boolean isWishlisted = wishlistService.isProductWishlisted(userId, productId);
+        return ResponseEntity.ok(java.util.Map.of("isWishlisted", isWishlisted));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> clearWishlist(
+            @RequestHeader("X-User-Id") UUID userId) {
+        wishlistService.clearWishlist(userId);
+        return ResponseEntity.noContent().build();
+    }
 }

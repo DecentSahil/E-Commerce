@@ -29,4 +29,20 @@ public class ProductClientImpl implements ProductClient {
             throw ex;
         }
     }
+
+    @Override
+    public Optional<com.example.wishlist.client.dto.ProductDto> getProduct(UUID productId) {
+        if (productId == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.ofNullable(productFeignClient.getProductById(productId));
+        } catch (FeignException.NotFound ex) {
+            log.warn("Product not found with id: {}", productId);
+            return Optional.empty();
+        } catch (Exception ex) {
+            log.error("Error communicating with product-service for productId {}: {}", productId, ex.getMessage());
+            return Optional.empty();
+        }
+    }
 }

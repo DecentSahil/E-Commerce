@@ -18,5 +18,7 @@ public class WishlistItemResponse {
 
     private UUID id;
     private UUID productId;
+    private String productName;
+    private String imageUrl;
     private Instant createdAt;
 }

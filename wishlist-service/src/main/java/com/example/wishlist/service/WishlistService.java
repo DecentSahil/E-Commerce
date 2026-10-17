@@ -11,4 +11,8 @@ public interface WishlistService {
     WishlistResponse addItemToWishlist(UUID userId, UUID productId);
 
     void removeItemFromWishlist(UUID userId, UUID productId);
+
+    boolean isProductWishlisted(UUID userId, UUID productId);
+
+    void clearWishlist(UUID userId);
 }

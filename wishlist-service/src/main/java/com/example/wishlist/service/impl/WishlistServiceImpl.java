@@ -1,6 +1,7 @@
 package com.example.wishlist.service.impl;
 
 import com.example.wishlist.client.ProductClient;
+import com.example.wishlist.client.dto.ProductDto;
 import com.example.wishlist.dto.response.WishlistResponse;
 import com.example.wishlist.entity.Wishlist;
 import com.example.wishlist.entity.WishlistItem;
@@ -12,11 +13,15 @@ import com.example.wishlist.repository.WishlistItemRepository;
 import com.example.wishlist.repository.WishlistRepository;
 import com.example.wishlist.service.WishlistService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WishlistServiceImpl implements WishlistService {
@@ -31,7 +36,8 @@ public class WishlistServiceImpl implements WishlistService {
     @Transactional
     public WishlistResponse getWishlist(UUID userId) {
         Wishlist wishlist = getOrCreateWishlist(userId);
-        return wishlistMapper.toResponse(wishlist);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(wishlist);
+        return wishlistMapper.toResponse(wishlist, productDetails);
     }
 
     @Override
@@ -57,7 +63,8 @@ public class WishlistServiceImpl implements WishlistService {
 
         eventPublisher.publishWishlistAdded(userId, productId);
 
-        return wishlistMapper.toResponse(wishlist);
+        Map<UUID, ProductDto> productDetails = fetchProductDetails(wishlist);
+        return wishlistMapper.toResponse(wishlist, productDetails);
     }
 
     @Override
@@ -75,6 +82,24 @@ public class WishlistServiceImpl implements WishlistService {
         eventPublisher.publishWishlistRemoved(userId, productId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isProductWishlisted(UUID userId, UUID productId) {
+        return wishlistRepository.findByUserId(userId)
+                .map(wishlist -> wishlistItemRepository.existsByWishlistIdAndProductId(wishlist.getId(), productId))
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional
+    public void clearWishlist(UUID userId) {
+        Wishlist wishlist = wishlistRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Wishlist not found for user: " + userId));
+
+        wishlistItemRepository.deleteAllByWishlistId(wishlist.getId());
+        wishlist.getItems().clear();
+    }
+
     private Wishlist getOrCreateWishlist(UUID userId) {
         return wishlistRepository.findByUserIdWithItems(userId)
                 .orElseGet(() -> wishlistRepository.save(
@@ -82,5 +107,22 @@ public class WishlistServiceImpl implements WishlistService {
                                 .userId(userId)
                                 .build()
                 ));
+    }
+
+    private Map<UUID, ProductDto> fetchProductDetails(Wishlist wishlist) {
+        Map<UUID, ProductDto> map = new HashMap<>();
+        if (wishlist.getItems() != null) {
+            for (WishlistItem item : wishlist.getItems()) {
+                if (item.getProductId() != null && !map.containsKey(item.getProductId())) {
+                    try {
+                        productClient.getProduct(item.getProductId())
+                                .ifPresent(dto -> map.put(item.getProductId(), dto));
+                    } catch (Exception ex) {
+                        log.warn("Could not fetch product details for product {}: {}", item.getProductId(), ex.getMessage());
+                    }
+                }
+            }
+        }
+        return map;
     }
 }
