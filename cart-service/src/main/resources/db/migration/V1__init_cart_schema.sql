@@ -1,9 +1,3 @@
--- =============================================================================
--- Migration: V1__init_cart_schema.sql
--- Description: Create initial schema for Cart Service (User Carts & Cart Items)
--- =============================================================================
-
--- Table: carts
 CREATE TABLE IF NOT EXISTS carts (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
@@ -14,7 +8,6 @@ CREATE TABLE IF NOT EXISTS carts (
 
 CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts (user_id);
 
--- Table: cart_items
 CREATE TABLE IF NOT EXISTS cart_items (
     id UUID PRIMARY KEY,
     cart_id UUID NOT NULL,
