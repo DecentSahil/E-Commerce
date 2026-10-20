@@ -107,7 +107,35 @@ All state mutations dispatch Kafka events using Spring's `TransactionSynchroniza
 
 ## 6. Startup & Execution Guide
 
-### Prerequisites
+### Option A: Docker Compose (Recommended)
+
+Run the entire platform (databases, broker, registry, configuration, gateway, all microservices, and React frontend) using a single command:
+
+1. **Configure Environment:**
+   ```bash
+   cp .env.example .env
+   # Update secrets in .env if running in production
+   ```
+
+2. **Launch All Services:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Verify Health:**
+   ```bash
+   docker compose ps
+   ```
+   - **Frontend UI**: [http://localhost:3000](http://localhost:3000)
+   - **API Gateway**: [http://localhost:8080](http://localhost:8080)
+   - **Eureka Dashboard**: [http://localhost:8761](http://localhost:8761)
+   - **Config Server**: [http://localhost:8888](http://localhost:8888)
+
+---
+
+### Option B: Local Development Startup
+
+#### Prerequisites
 - **Java 21 JDK** installed
 - **Apache Maven 3.9+**
 - **PostgreSQL 16** running on port `5432`
@@ -115,7 +143,7 @@ All state mutations dispatch Kafka events using Spring's `TransactionSynchroniza
 - **Apache Kafka 3.x** running on port `9092`
 - **Node.js 18+** & npm for the React frontend
 
-### Step-by-Step Service Startup Sequence:
+#### Step-by-Step Service Startup Sequence:
 To ensure configuration and discovery resolve correctly, start the microservices in the following exact order:
 
 1. **Infrastructure**:
