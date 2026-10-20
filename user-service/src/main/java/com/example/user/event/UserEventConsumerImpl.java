@@ -42,6 +42,10 @@ public class UserEventConsumerImpl implements UserEventConsumer {
                     ? payload.get("role").toString()
                     : "ROLE_USER";
 
+            String name = payload.get("name") != null
+                    ? payload.get("name").toString()
+                    : null;
+
             if (userIdStr != null) {
 
                 UserRegisteredEvent event =
@@ -49,6 +53,7 @@ public class UserEventConsumerImpl implements UserEventConsumer {
                                 .userId(UUID.fromString(userIdStr))
                                 .email(email)
                                 .role(role)
+                                .name(name)
                                 .build();
 
                 handleUserRegistered(event);
@@ -84,12 +89,24 @@ public class UserEventConsumerImpl implements UserEventConsumer {
             }
         }
 
+        String firstName = null;
+        String lastName = null;
+        if (event.getName() != null && !event.getName().isBlank()) {
+            String[] parts = event.getName().trim().split("\\s+", 2);
+            firstName = parts[0];
+            if (parts.length > 1) {
+                lastName = parts[1];
+            }
+        }
+
         UserProfile profile = UserProfile.builder()
                 .authUserId(event.getUserId())
                 .email(normalizedEmail)
+                .firstName(firstName)
+                .lastName(lastName)
                 .build();
 
         userProfileRepository.save(profile);
-        log.info("Created user profile for authUserId: {}", event.getUserId());
+        log.info("Created user profile for authUserId: {}, name: {} {}", event.getUserId(), firstName, lastName);
     }
 }

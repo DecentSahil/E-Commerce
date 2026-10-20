@@ -133,4 +133,53 @@ public class UserProfileServiceImpl implements UserProfileService {
 
         userProfileRepository.delete(profile);
     }
+
+    @Override
+    @Transactional
+    public UserProfileResponse uploadAvatar(UUID authUserId, org.springframework.web.multipart.MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Cannot upload an empty avatar file.");
+        }
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("Avatar file size exceeds maximum limit of 10MB.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+
+        String contentType = file.getContentType();
+        boolean isValidMime = contentType != null && contentType.startsWith("image/");
+        java.util.List<String> allowedExtensions = java.util.Arrays.asList(".jpg", ".jpeg", ".png", ".webp", ".gif");
+        if (!isValidMime && !allowedExtensions.contains(extension)) {
+            throw new IllegalArgumentException("Only valid image formats (JPEG, PNG, WebP, GIF) are allowed.");
+        }
+
+        try {
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads/avatars");
+            if (!java.nio.file.Files.exists(uploadPath)) {
+                java.nio.file.Files.createDirectories(uploadPath);
+            }
+
+            String uniqueFilename = UUID.randomUUID() + (extension.isEmpty() ? ".jpg" : extension);
+            java.nio.file.Path destination = uploadPath.resolve(uniqueFilename);
+            java.nio.file.Files.copy(file.getInputStream(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            String avatarUrl = "/api/v1/users/avatars/" + uniqueFilename;
+
+            UserProfile profile = userProfileRepository.findByAuthUserId(authUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User profile not found for ID: " + authUserId));
+
+            profile.setProfilePictureUrl(avatarUrl);
+            UserProfile updated = userProfileRepository.save(profile);
+            log.info("User avatar uploaded successfully for user {}: {}", authUserId, avatarUrl);
+
+            return userMapper.toResponse(updated);
+        } catch (java.io.IOException e) {
+            log.error("Failed to store uploaded avatar for user {}", authUserId, e);
+            throw new RuntimeException("Failed to save avatar image: " + e.getMessage(), e);
+        }
+    }
 }

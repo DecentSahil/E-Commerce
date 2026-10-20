@@ -78,4 +78,20 @@ public class UserProfileController {
         userProfileService.deleteProfile(authUserId);
         return ResponseEntity.ok(new MessageResponse("User profile deleted successfully"));
     }
+
+    @PostMapping(value = "/me/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserProfileResponse> uploadMyAvatar(
+            @RequestHeader(USER_ID_HEADER) UUID authUserId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        UserProfileResponse response = userProfileService.uploadAvatar(authUserId, file);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/{authUserId}/avatar", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserProfileResponse> uploadAvatar(
+            @PathVariable("authUserId") UUID authUserId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        UserProfileResponse response = userProfileService.uploadAvatar(authUserId, file);
+        return ResponseEntity.ok(response);
+    }
 }

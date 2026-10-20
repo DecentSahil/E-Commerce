@@ -18,4 +18,6 @@ public interface UserProfileService {
     UserProfileResponse patchProfile(UUID authUserId, PatchUserProfileRequest request);
 
     void deleteProfile(UUID authUserId);
+
+    UserProfileResponse uploadAvatar(UUID authUserId, org.springframework.web.multipart.MultipartFile file);
 }

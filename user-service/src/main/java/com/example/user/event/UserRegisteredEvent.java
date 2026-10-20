@@ -20,6 +20,7 @@ public class UserRegisteredEvent {
     private UUID userId;
     private String email;
     private String role;
+    private String name;
 
     @Builder.Default
     private Instant timestamp = Instant.now();
