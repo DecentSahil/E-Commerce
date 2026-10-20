@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import {
   ArrowRight,
-  Sparkles,
   Tag,
   Scale,
   Store,
@@ -16,7 +15,6 @@ import {
   Tv,
   Cpu,
   Package,
-  Layers,
   CheckCircle2,
   LayoutGrid,
   Check,
@@ -208,75 +206,6 @@ export const HomePage = () => {
           </div>
         </section>
       ) : null}
-
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-7 shadow-xs">
-        <div className="absolute top-0 right-1/4 -mt-16 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 -mb-16 w-60 h-60 rounded-full bg-violet-500/10 blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-8">
-          <div className="space-y-2.5 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-bold">
-              <Sparkles className="w-3 h-3 text-indigo-400" />
-              <span>Independent Seller Marketplace</span>
-            </div>
-
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-snug">
-              Compare Seller Offers. <span className="text-indigo-400">Shop Confidently.</span>
-            </h1>
-
-            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl font-normal">
-              Unified canonical product catalog backed by independent merchants. Compare live prices and inventory for the best available option.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              <Link
-                to="/products"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
-              >
-                Explore Catalog <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-              <Link
-                to="/seller"
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold rounded-xl border border-white/15 transition-colors"
-              >
-                Seller Workspace
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:flex md:flex-col gap-2 shrink-0 md:w-64 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-white/10 md:pl-6 text-left">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
-                <Layers className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-white block leading-tight">Canonical Catalog</span>
-                <span className="text-[10px] text-slate-400 block leading-tight">No duplicate listings</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
-                <Scale className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-white block leading-tight">Competitive Buy Box</span>
-                <span className="text-[10px] text-slate-400 block leading-tight">Live seller pricing</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center shrink-0">
-                <PackageCheck className="w-3.5 h-3.5" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-white block leading-tight">Lifecycle Tracking</span>
-                <span className="text-[10px] text-slate-400 block leading-tight">Confirmed to delivery</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <section className="space-y-3.5 sm:space-y-4">
         <div className="flex items-center justify-between gap-3">
