@@ -27,6 +27,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/auth/**").permitAll()
                         .pathMatchers("/api/v1/orders/admin/**").hasRole("ADMIN")
                         .pathMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/listings/my", "/api/v1/listings/my/**").authenticated()
                         .pathMatchers(HttpMethod.GET, "/api/v1/listings/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
@@ -34,6 +35,7 @@ public class SecurityConfig {
                                 "/api/v1/recommendations",
                                 "/api/v1/recommendations/trending",
                                 "/api/v1/recommendations/products/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/users/avatars/**").permitAll()
                         .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyExchange().authenticated()
                 )

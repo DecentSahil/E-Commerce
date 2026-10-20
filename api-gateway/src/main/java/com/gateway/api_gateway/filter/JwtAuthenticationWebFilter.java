@@ -35,7 +35,8 @@ public class JwtAuthenticationWebFilter implements WebFilter {
             "/api/v1/products",
             "/api/v1/listings",
             "/api/v1/brands",
-            "/api/v1/categories"
+            "/api/v1/categories",
+            "/api/v1/users/avatars"
     );
 
     @Override
@@ -117,6 +118,9 @@ public class JwtAuthenticationWebFilter implements WebFilter {
             return true;
         }
         if ("GET".equalsIgnoreCase(method)) {
+            if (path.equals("/api/v1/listings/my") || path.startsWith("/api/v1/listings/my/")) {
+                return false;
+            }
             for (String prefix : PUBLIC_PREFIXES) {
                 if (path.startsWith(prefix)) {
                     return true;
