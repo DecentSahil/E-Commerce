@@ -1,8 +1,3 @@
--- =============================================================================
--- Migration: V1__init_notification_schema.sql
--- Description: Create initial schema for Notification Service (In-App notifications and delivery tracking)
--- =============================================================================
-
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
