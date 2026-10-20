@@ -115,8 +115,8 @@ services:
       - "8888:8888"
     environment:
       SERVER_PORT: 8888
-      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-file:///config-repo}
-      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-main}
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:///config-repo
       CONFIG_ENCRYPT_KEY: ${CONFIG_ENCRYPT_KEY:-CHANGE_ME_ENCRYPT_KEY}
       EUREKA_HOSTNAME: config-server
       EUREKA_URL: http://service-registry:8761/eureka/
@@ -126,6 +126,12 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
     volumes:
       - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     depends_on:
       service-registry:
         condition: service_started
@@ -165,7 +171,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -196,7 +202,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -225,7 +231,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -254,7 +260,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -285,7 +291,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -316,7 +322,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -351,7 +357,7 @@ services:
       kafka:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
     networks:
@@ -375,7 +381,7 @@ services:
       RABBITMQ_HOST: rabbitmq
     depends_on:
       config-server:
-        condition: service_started
+        condition: service_healthy
       service-registry:
         condition: service_started
       auth-service:
