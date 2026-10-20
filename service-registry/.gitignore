@@ -1,15 +1,12 @@
-# Maven
 target/
 .mvn/wrapper/maven-wrapper.jar
 
-# IDEs
 .idea/
 .vscode/
 *.iml
 *.ipr
 *.iws
 
-# Eclipse / STS
 .classpath
 .project
 .settings/
@@ -18,20 +15,16 @@ target/
 .sts4-cache
 .apt_generated
 
-# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-# Build
 build/
 
-# Logs
 *.log
 logs/
 
-# OS
 .DS_Store
 Thumbs.db
