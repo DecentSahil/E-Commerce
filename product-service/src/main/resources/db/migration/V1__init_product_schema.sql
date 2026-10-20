@@ -1,9 +1,3 @@
--- =============================================================================
--- Migration: V1__init_product_schema.sql
--- Description: Create initial schema for Product Service Catalog, Listings & Metadata
--- =============================================================================
-
--- Table: categories
 CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -15,7 +9,6 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE INDEX IF NOT EXISTS idx_categories_name ON categories (LOWER(name));
 
--- Table: brands
 CREATE TABLE IF NOT EXISTS brands (
     id UUID PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -26,7 +19,6 @@ CREATE TABLE IF NOT EXISTS brands (
 
 CREATE INDEX IF NOT EXISTS idx_brands_name ON brands (LOWER(name));
 
--- Table: tags
 CREATE TABLE IF NOT EXISTS tags (
     id UUID PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -36,7 +28,6 @@ CREATE TABLE IF NOT EXISTS tags (
 
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags (LOWER(name));
 
--- Table: products
 CREATE TABLE IF NOT EXISTS products (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -56,7 +47,6 @@ CREATE INDEX IF NOT EXISTS idx_products_brand_id ON products (brand_id);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products (status);
 CREATE INDEX IF NOT EXISTS idx_products_name ON products (LOWER(name));
 
--- Table: listings (Multi-seller inventory & pricing)
 CREATE TABLE IF NOT EXISTS listings (
     id UUID PRIMARY KEY,
     product_id UUID NOT NULL,
@@ -77,7 +67,6 @@ CREATE INDEX IF NOT EXISTS idx_listings_product_id ON listings (product_id);
 CREATE INDEX IF NOT EXISTS idx_listings_seller_id ON listings (seller_id);
 CREATE INDEX IF NOT EXISTS idx_listings_status ON listings (status);
 
--- Table: product_tags (Many-to-Many join table)
 CREATE TABLE IF NOT EXISTS product_tags (
     product_id UUID NOT NULL,
     tag_id UUID NOT NULL,
@@ -89,7 +78,6 @@ CREATE TABLE IF NOT EXISTS product_tags (
 CREATE INDEX IF NOT EXISTS idx_product_tags_product ON product_tags (product_id);
 CREATE INDEX IF NOT EXISTS idx_product_tags_tag ON product_tags (tag_id);
 
--- Table: product_specifications (Flexible Key-Value specifications)
 CREATE TABLE IF NOT EXISTS product_specifications (
     id UUID PRIMARY KEY,
     product_id UUID NOT NULL,
