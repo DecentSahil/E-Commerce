@@ -103,7 +103,6 @@ public class ProductController {
             @RequestHeader(value = "X-User-Role", required = false) String userRole,
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file
     ) {
-        verifyAdminRole(userRole);
         String imageUrl = imageUploadService.uploadImage(file);
         return ResponseEntity.ok(java.util.Map.of(
                 "imageUrl", imageUrl,
