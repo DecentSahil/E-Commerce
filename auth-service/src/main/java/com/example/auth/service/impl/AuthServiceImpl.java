@@ -133,7 +133,8 @@ public class AuthServiceImpl implements AuthService {
                 new UserRegisteredPayload(
                         savedUser.getId(),
                         savedUser.getEmail(),
-                        savedUser.getRole().name()
+                        savedUser.getRole().name(),
+                        request.getName()
                 );
 
         EventEnvelope<UserRegisteredPayload> event =
@@ -222,7 +223,8 @@ public class AuthServiceImpl implements AuthService {
                 new UserRegisteredPayload(
                         savedUser.getId(),
                         savedUser.getEmail(),
-                        savedUser.getRole().name()
+                        savedUser.getRole().name(),
+                        request.getName()
                 );
 
         EventEnvelope<UserRegisteredPayload> event =
