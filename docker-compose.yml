@@ -1,0 +1,416 @@
+services:
+  postgresql:
+    image: postgres:16-alpine
+    container_name: nexus-postgresql
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: nexus-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: nexus-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  service-registry:
+    build:
+      context: ./service-registry
+      dockerfile: Dockerfile
+    image: nexus-service-registry:latest
+    container_name: nexus-service-registry
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+      EUREKA_HOSTNAME: service-registry
+    networks:
+      - nexus-network
+
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    image: nexus-config-server:latest
+    container_name: nexus-config-server
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      SERVER_PORT: 8888
+      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-file:///config-repo}
+      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-main}
+      CONFIG_ENCRYPT_KEY: ${CONFIG_ENCRYPT_KEY:-CHANGE_ME_ENCRYPT_KEY}
+      EUREKA_HOSTNAME: config-server
+      EUREKA_URL: http://service-registry:8761/eureka/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - ./config-repo:/config-repo:ro
+    depends_on:
+      service-registry:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nexus-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    image: nexus-auth-service:latest
+    container_name: nexus-auth-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ecommerce_auth_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+      JWT_ACCESS_TOKEN_EXPIRATION_MS: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:-900000}
+      JWT_REFRESH_TOKEN_EXPIRATION_MS: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:-604800000}
+      JWT_ISSUER: ${JWT_ISSUER:-ecommerce-auth-service}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    image: nexus-user-service:latest
+    container_name: nexus-user-service
+    restart: unless-stopped
+    volumes:
+      - user_avatars:/app/uploads/avatars
+    environment:
+      SERVER_PORT: 8082
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ecommerce_user_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    image: nexus-product-service:latest
+    container_name: nexus-product-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8083
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ecommerce_product_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    image: nexus-order-service:latest
+    container_name: nexus-order-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8084
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ecommerce_order_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  wishlist-service:
+    build:
+      context: ./wishlist-service
+      dockerfile: Dockerfile
+    image: nexus-wishlist-service:latest
+    container_name: nexus-wishlist-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8086
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: ecommerce_wishlist_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: Dockerfile
+    image: nexus-cart-service:latest
+    container_name: nexus-cart-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8087
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: ecommerce_cart_db
+      DB_USER: ${POSTGRES_USERNAME:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    image: nexus-notification-service:latest
+    container_name: nexus-notification-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8090
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      POSTGRES_HOST: postgresql
+      POSTGRES_PORT: 5432
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/ecommerce_notification_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-1234}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RABBITMQ_HOST: rabbitmq
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-CHANGE_ME_MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-CHANGE_ME_MAIL_PASSWORD}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    image: nexus-api-gateway:latest
+    container_name: nexus-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      EUREKA_URL: http://service-registry:8761/eureka/
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      config-server:
+        condition: service_started
+      service-registry:
+        condition: service_started
+      auth-service:
+        condition: service_started
+    networks:
+      - nexus-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: nexus-frontend:latest
+    container_name: nexus-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks:
+      - nexus-network
+
+volumes:
+  postgres_data:
+    name: nexus_postgres_data
+  redis_data:
+    name: nexus_redis_data
+  kafka_data:
+    name: nexus_kafka_data
+  rabbitmq_data:
+    name: nexus_rabbitmq_data
+  user_avatars:
+    name: nexus_user_avatars
+
+networks:
+  nexus-network:
+    name: nexus_network
+    driver: bridge
