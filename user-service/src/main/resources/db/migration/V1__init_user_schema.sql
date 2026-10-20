@@ -1,9 +1,3 @@
--- =============================================================================
--- Migration: V1__init_user_schema.sql
--- Description: Create initial schema for User Service (User profiles & Addresses)
--- =============================================================================
-
--- Table: users
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     auth_user_id UUID NOT NULL,
@@ -21,7 +15,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_auth_user_id ON users (auth_user_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
 
--- Table: addresses
 CREATE TABLE IF NOT EXISTS addresses (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
