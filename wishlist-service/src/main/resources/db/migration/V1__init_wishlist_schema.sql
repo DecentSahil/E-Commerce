@@ -1,9 +1,3 @@
--- =============================================================================
--- Migration: V1__init_wishlist_schema.sql
--- Description: Create initial schema for Wishlist Service (User Wishlists & Items)
--- =============================================================================
-
--- Table: wishlists
 CREATE TABLE IF NOT EXISTS wishlists (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
@@ -14,7 +8,6 @@ CREATE TABLE IF NOT EXISTS wishlists (
 
 CREATE INDEX IF NOT EXISTS idx_wishlists_user_id ON wishlists (user_id);
 
--- Table: wishlist_items
 CREATE TABLE IF NOT EXISTS wishlist_items (
     id UUID PRIMARY KEY,
     wishlist_id UUID NOT NULL,
